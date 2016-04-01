@@ -1,0 +1,50 @@
+{
+  "name": "webstomp-client",
+  "version": "1.0.0",
+  "description": "Stomp client over websocket for browsers",
+  "license": "Apache-2.0",
+  "keywords": [
+    "stomp",
+    "webstomp",
+    "websocket"
+  ],
+  "author": "Jérôme Steunou",
+  "files": [
+    "dist",
+    "src",
+    "*.md",
+    "*.txt"
+  ],
+  "main": "dist/webstomp.js",
+  "es6": "src/webstomp.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JSteunou/webstomp-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JSteunou/webstomp-client/issues"
+  },
+  "homepage": "https://github.com/JSteunou/webstomp-client#readme",
+  "devDependencies": {
+    "babel-core": "^6.7.4",
+    "babel-loader": "^6.2.4",
+    "babel-plugin-add-module-exports": "^0.1.2",
+    "babel-preset-es2015": "^6.6.0",
+    "http-server": "^0.9.0",
+    "in-publish": "^2.0.0",
+    "jscs": "^2.11.0",
+    "jshint": "^2.9.1",
+    "opn-cli": "^3.1.0",
+    "webpack": "^1.12.14"
+  },
+  "scripts": {
+    "test": "echo \"TODO: add tests\"",
+    "build": "webpack && webpack -p --config webpack.min.config.js",
+    "dev": "webpack --watch",
+    "example": "webpack && opn http://localhost:8080/example & http-server",
+    "lint": "jshint src && jscs src --fix",
+    "preversion": "npm run lint && npm run test",
+    "postversion": "git push --follow-tags && npm publish",
+    "prepublish": "in-publish && npm run build || not-in-publish"
+  }
+}

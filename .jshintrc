@@ -1,0 +1,63 @@
+{
+    /*
+     * ENVIRONMENTS
+     * =================
+     */
+
+    // Define globals exposed by modern browsers.
+    "browser": true,
+
+    // Allow CommonJS writing
+    "node": true,
+
+    // es2015
+    "esversion": 6,
+
+
+
+    /*
+     * ENFORCING OPTIONS
+     * =================
+     */
+
+    // Prohibits use of == and != in favor of === and !==.
+    "eqeqeq": true,
+
+    // Requires all for in loops to filter object's items.
+    "forin": true,
+
+    // Prohibits overwriting prototypes of native objects such as Array, Date and so on.
+    "freeze": true,
+
+    // Prohibits use of a variable before it is defined.
+    "latedef": true,
+
+    // Prohibits the use of arguments.caller and arguments.callee.
+    "noarg": true,
+
+    // Prohibits the use of the comma operator.
+    "nocomma": true,
+
+    // Warns about "non-breaking whitespace" characters.
+    "nonbsp": true,
+
+    // Prohibits the use of constructor functions for side-effects.
+    "nonew": true,
+
+    // Nope, thanks to strict-loader for webpack & use-strict module for node
+    "strict": false,
+
+    // Prohibits use of explicitly undeclared variables.
+    "undef": true,
+
+    // Warns when variables are defined but never used.
+    "unused": true
+
+
+
+    /*
+     * RELAXING OPTIONS
+     * =================
+     */
+
+}
