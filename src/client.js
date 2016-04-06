@@ -7,19 +7,19 @@ import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray} f
 // `send()`, etc.)
 class Client {
 
-    constructor(ws, {binary=false, heartbeat={outgoing:10000, incoming:10000}, debug=true}) {
+    constructor(ws, options={binary:false, heartbeat: {outgoing:10000, incoming:10000}, debug:true}) {
         this.ws = ws;
         this.ws.binaryType = 'arraybuffer';
-        this.binary = binary;
-        this.hasDebug = debug;
+        this.binary = options.binary;
+        this.hasDebug = options.debug;
         // used to index subscribers
         this.counter = 0;
         this.connected = false;
         // Heartbeat properties of the client
-        // falsy value means no heartbeat
         // outgoing: send heartbeat every 10s by default (value is in ms)
         // incoming: expect to receive server heartbeat at least every 10s by default
-        this.heartbeat = heartbeat || {outgoing: 0, incoming: 0};
+        // falsy value means no heartbeat hence 0,0
+        this.heartbeat = options.heartbeat || {outgoing: 0, incoming: 0};
         // maximum *WebSocket* frame size sent by the client. If the STOMP frame
         // is bigger than this value, the STOMP frame will be sent using multiple
         // WebSocket frames (default is 16KiB)
