@@ -1,3 +1,9 @@
+# 1.0.1 - 06 Apr. 2016
+
+* Fixes #2: better ES6 default options for Client
+* Add an example using sockjs & webstomp.over
+
+
 # 1.0.0 - 01 Apr. 2016
 
 Initial fork from stomp.js
