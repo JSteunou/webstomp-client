@@ -89,9 +89,12 @@
                 b: document.querySelector('[data-room="b"]')
             };
 
+            // Need to deactivate heartbeat because rabbitmq webstomp
+            // sockjs server does not handle it.
+            // See https://www.rabbitmq.com/web-stomp.html usage section
             var clients = {
-                a: webstomp.over(new SockJS(url)),
-                b: webstomp.over(new SockJS(url))
+                a: webstomp.over(new SockJS(url, {heartbeat: false})),
+                b: webstomp.over(new SockJS(url, {heartbeat: false}))
             };
 
             var names = {
