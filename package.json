@@ -35,8 +35,8 @@
     "jscs": "^2.11.0",
     "jshint": "^2.9.1",
     "opn-cli": "^3.1.0",
-    "sockjs-client": "^1.0.3",
-    "webpack": "^1.12.14"
+    "webpack": "^1.12.14",
+    "ws": "^1.0.1"
   },
   "scripts": {
     "test": "echo \"TODO: add tests\"",
