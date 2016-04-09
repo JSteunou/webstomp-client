@@ -1,3 +1,9 @@
+# 1.0.2 - 09 Apr. 2016
+
+* Add an example using nodejs
+* Update the documentation around nodejs and webstomp.over
+
+
 # 1.0.1 - 06 Apr. 2016
 
 * Fixes #2: better ES6 default options for Client
