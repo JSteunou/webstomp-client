@@ -1,6 +1,6 @@
 # webstomp-client
 
-This library provides a [stomp](https://stomp.github.io/) client for Web browsers through Web Sockets.
+This library provides a [stomp](https://stomp.github.io/) client for Web browsers and nodejs through Web Sockets.
 
 ## Project Status
 
@@ -12,11 +12,17 @@ Only ES5 compatible modern browsers are supported. If you need a websocket polyf
 
 ## nodejs support
 
-Should work over websocket even if the main target is the Browsers. You should fall-back to [stomp-websocket](https://github.com/jmesnil/stomp-websocket) if you encounter issues.
+As nodejs do not have a WebSocket object like browsers have, you must choose a websocket client and use [webstomp.over](https://github.com/JSteunou/webstomp-client#overws-options) instead of `webstomp.client`. Choosing a good client is maybe the must difficult part:
+* [websocket](https://www.npmjs.com/package/websocket)
+* [ws](https://www.npmjs.com/package/ws)
+* [sockjs](https://www.npmjs.com/package/sockjs-client) If your server part is also SockJS
+* ... add yours
+
 
 ## Example
 
 `npm run example` will open examples in browser and try to connect to [RabbitMQ Web-Stomp](https://www.rabbitmq.com/web-stomp.html) default Web Sockets url.
+`node run example/broadcast-node.js` will run a dead simple nodejs example.
 
 ## Use
 
@@ -52,7 +58,7 @@ Jeff Mesnil stomp-websocket [documentation](http://jmesnil.net/stomp-websocket/d
 
 #### client(url, [options])
 
-Uses `WebSocket` to return a webstomp `Client` object.
+Uses global `WebSocket` object for you to return a webstomp `Client` object.
 
 ##### url<String>
 
@@ -60,18 +66,36 @@ Web Sockets endpoint url
 
 ##### options<Object>
 
-* protocols: default to `['v10.stomp', 'v11.stomp']`
+* protocols: default to `['v10.stomp', 'v11.stomp', 'v12.stomp']`
 * binary: default to `false`. See [binary](#binary) section.
-* heartbeat: default to `{incoming: 10000, outgoing: 10000}`. You can provide `false` to cut it or a definition object.
+* heartbeat: default to `{incoming: 10000, outgoing: 10000}`. You can provide `false` to cut it (recommended when the server is a SockJS server) or a definition object.
 * debug: default to `true`. Will log frame using `console.log`
 
 #### over(ws, [options])
 
-Takes a `WebSocket` alike object instance to return a webstomp `Client` object. Allows you to use another Web Sockets object, like sockjs.
+Takes a `WebSocket` alike object **instance** to return a webstomp `Client` object. Allows you to use another `WebSocket` object than the default one. 2 cases for this:
+* you do not want `webstomp.client` to create a default instance for you.
+* you are in an old browser or nodejs and do not have a global `WebSocket` object that `webstomp.client` can use.
 
 ##### ws<WebSocket>
 
 `WebSocket` object instance
+
+##### options<Object>
+
+* binary: default to `false`. See [binary](#binary) section.
+* heartbeat: default to `{incoming: 10000, outgoing: 10000}`. You can provide `false` to cut it (recommended when the server is a SockJS server) or a definition object.
+* debug: default to `true`. Will log frame using `console.log`
+
+### VERSIONS
+
+#### supportedVersions()
+
+List all STOMP specifications supported.
+
+#### supportedProtocols()
+
+List all websocket STOMP protocols supported. Useful when creating your own `WebSocket` instance, although optional, protocols is often the second parameter.
 
 ### Client
 
