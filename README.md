@@ -12,7 +12,7 @@ Only ES5 compatible modern browsers are supported. If you need a websocket polyf
 
 ## nodejs support
 
-As nodejs do not have a WebSocket object like browsers have, you must choose a websocket client and use [webstomp.over](https://github.com/JSteunou/webstomp-client#overws-options) instead of `webstomp.client`. Choosing a good client is maybe the must difficult part:
+As nodejs does not have a WebSocket object like browsers have, you must choose a websocket client and use [webstomp.over](https://github.com/JSteunou/webstomp-client#overws-options) instead of `webstomp.client`. Choosing a good client is maybe the must difficult part:
 * [websocket](https://www.npmjs.com/package/websocket)
 * [ws](https://www.npmjs.com/package/ws)
 * [sockjs](https://www.npmjs.com/package/sockjs-client) If your server part is also SockJS
