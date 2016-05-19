@@ -145,7 +145,10 @@ class Client {
         this.ws.onopen = () => {
             this.debug('Web Socket Opened...');
             headers['accept-version'] = VERSIONS.supportedVersions();
-            headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
+            // Check if we already have heart-beat in headers before adding them
+            if (!headers['heart-beat']) {
+                headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
+            }
             this._transmit('CONNECT', headers);
         };
     }
