@@ -20,14 +20,17 @@ module.exports = function (config) {
             webpack,
             'karma-mocha',
             'karma-firefox-launcher',
-            'karma-chrome-launcher'
+            'karma-chrome-launcher',
+            'karma-sauce-launcher',
+            'karma-coverage'
         ],
         // list of files to exclude
         exclude: [],
         // preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
         preprocessors: {
-            'test/*.js': ['webpack']
+            'test/*.js': ['webpack'],
+            'src/**/*.js': ['webpack']
         },
         webpack: {
             module: {
@@ -37,7 +40,12 @@ module.exports = function (config) {
                         loader: 'babel-loader',
                         exclude: /node_modules/
                     }
-                ]
+                ],
+                postLoaders: [{
+                    test: /\.js$/,
+                    exclude: /(node_modules|test)/,
+                    loader: 'istanbul-instrumenter'
+                }]
             },
             resolve: {
                 extensions: ['', '.js']
@@ -52,11 +60,27 @@ module.exports = function (config) {
                 colors: true
             }
         },
-        // test results reporter to use
-        // possible values: 'dots', 'progress'
-        // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-        reporters: ['progress'],
-
+        reporters: ['progress', 'coverage'],
+        coverageReporter: {
+            dir: 'dist/coverage/',
+            subdir: function (browser) {
+                return browser.toLowerCase().split(/[ /-]/)[0];
+            },
+            reporters: [{
+                type: 'html',
+                file: 'coverage.html'
+            }, {
+                type: 'lcovonly',
+                file: 'coverage.info'
+            }],
+            watermarks: {
+                statements: [60, 80],
+                functions: [60, 80],
+                branches: [60, 80],
+                lines: [60, 80]
+            }
+        }
+        ,
         // web server port
         port: 1110,
         // enable / disable colors in the output (reporters and logs)

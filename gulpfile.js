@@ -5,6 +5,7 @@ var webpack = require('webpack');
 var del = require('del');
 var karma = require('karma').Server;
 var spawn = require('child_process').spawn;
+var coveralls = require('gulp-coveralls');
 var node;
 
 gulp.task('clean', function (cb) {
@@ -12,7 +13,7 @@ gulp.task('clean', function (cb) {
     cb();
 });
 
-gulp.task('testServer', function _testServer(callback) {
+gulp.task('testServer', ['clean'], function _testServer(cb) {
     if (node) {
         node.kill();
     }
@@ -37,17 +38,17 @@ gulp.task('testServer', function _testServer(callback) {
         }
     }, function (err, stats) {
         if (err) {
-            callback(err);
+            cb(err);
 
         } else {
             node = spawn('node', ['./dist/support/server-mock.js'], {stdio: 'inherit'});
-            callback();
+            cb();
         }
     });
 });
 
 gulp.task('test', ['testServer'], function _test(cb) {
-    new karma({
+    return new karma({
         configFile: __dirname + '/karma.conf.js'
         , singleRun: true
     }, function _testCB(code) {
@@ -56,4 +57,9 @@ gulp.task('test', ['testServer'], function _test(cb) {
         }
         cb(code);
     }).start();
+});
+
+gulp.task('coverage', function _coverage(cb) {
+    return gulp.src('dist/coverage/coverage.info')
+        .pipe(coveralls());
 });
