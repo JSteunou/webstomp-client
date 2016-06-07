@@ -7,6 +7,8 @@ branches:
     - master
 env :
     - BROWSSER=chromium_browser
+addons:
+  firefox: 'latest'
 before_script:
   - npm install -g gulp
   - export CHROME_BIN=chromium-browser
