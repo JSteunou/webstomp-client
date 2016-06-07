@@ -5,6 +5,8 @@ node_js:
 branches:
   only:
     - master
+env :
+    - BROWSSER=chromium_browser
 addons:
   firefox: 'latest'
 cache:
@@ -12,6 +14,10 @@ cache:
     - node_modules
 before_script:
   - npm install -g gulp
+  - export CHROME_BIN=chromium-browser
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+  - sleep 3 # give xvfb some time to start
 script: gulp test
 after_success:
   - gulp coverage
