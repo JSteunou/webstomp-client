@@ -9,6 +9,9 @@ env :
     - BROWSSER=chromium_browser
 addons:
   firefox: 'latest'
+cache:
+  directories:
+    - node_modules
 before_script:
   - npm install -g gulp
   - export CHROME_BIN=chromium-browser
