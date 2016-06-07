@@ -197,16 +197,20 @@ describe('[client]', function _client() {
 
     describe('[transaction]', function _transaction() {
 
-        let sockjs;
-        let client;
-        let sub;
-
-        before((done)=> {
-            sockjs = new SockJS(url);
-            client = webstomp.over(sockjs);
-            sub = {};
+        it('[ack]', function _ack(done) {
+            let sockjs = new SockJS(url);
+            let client = webstomp.over(sockjs);
             client.connect({}, function _done() {
-                done();
+                let sub = client.subscribe("/ack", function _subCB(frame) {
+                    assert.isDefined(frame, 'ack');
+                    frame.ack();
+                });
+                client.onreceive = function (frame) {
+                    assert.strictEqual(frame.body, 'ack success');
+                    sub.unsubscribe();
+                    client.disconnect();
+                    done();
+                };
 
             }, function _failed() {
                 throw {
@@ -216,85 +220,119 @@ describe('[client]', function _client() {
             });
         });
 
-        it('[ack]', function _ack(done) {
-            sub = client.subscribe("/ack", function _subCB(frame) {
-                assert.isDefined(frame, 'ack');
-                frame.ack();
-            });
-            client.onreceive = function (frame) {
-                assert.strictEqual(frame.body, 'ack success');
-                sub.unsubscribe();
-                done();
-            };
-        });
-
         it('[nack]', function _nack(done) {
-            sub = client.subscribe("/nack", function _subCB(frame) {
-                assert.isDefined(frame, 'nack');
-                frame.nack();
+            let sockjs = new SockJS(url);
+            let client = webstomp.over(sockjs);
+            client.connect({}, function _done() {
+                let sub = client.subscribe("/nack", function _subCB(frame) {
+                    assert.isDefined(frame, 'nack');
+                    frame.nack();
+                });
+                client.onreceive = function (frame) {
+                    assert.strictEqual(frame.body, 'nack success');
+                    sub.unsubscribe();
+                    client.disconnect();
+                    done();
+                };
+
+            }, function _failed() {
+                throw {
+                    name: "connectException",
+                    message: "connected failed."
+                };
             });
-            client.onreceive = function (frame) {
-                assert.strictEqual(frame.body, 'nack success');
-                sub.unsubscribe();
-                done();
-            };
         });
 
         it('[begin and commit]', function _commit(done) {
-            let tran;
-            client.onreceive = function (frame) {
-                assert.strictEqual(frame.body, 'begin success');
-                assert.isDefined(tran, 'id');
-                assert.isDefined(tran, 'commit');
-                assert.isDefined(tran, 'abort');
-                tran.commit();
 
+            let sockjs = new SockJS(url);
+            let client = webstomp.over(sockjs);
+            client.connect({}, function _done() {
+                let tran;
                 client.onreceive = function (frame) {
-                    assert.strictEqual(frame.body, 'commit success');
-                    done();
-                };
-            };
-            tran = client.begin();
-        });
-
-        it('[begin and abort]', function _abort(done) {
-            let tran;
-            client.onreceive = function (frame) {
-                assert.strictEqual(frame.body, 'begin success');
-
-                assert.isDefined(tran, 'id');
-                assert.isDefined(tran, 'commit');
-                assert.isDefined(tran, 'abort');
-                tran.abort();
-
-                client.onreceive = function (frame) {
-                    assert.strictEqual(frame.body, 'abort success');
-                    done();
-                };
-            };
-            tran = client.begin();
-        });
-
-        it('[begin commit and abort]', function _commitAndAbort(done) {
-            let tran;
-            client.onreceive = function (frame) {
-                assert.strictEqual(frame.body, 'begin success');
-                assert.isDefined(tran, 'id');
-                assert.isDefined(tran, 'commit');
-                assert.isDefined(tran, 'abort');
-                tran.commit();
-
-                client.onreceive = function (frame) {
-                    assert.strictEqual(frame.body, 'commit success');
-                    tran.abort();
+                    assert.strictEqual(frame.body, 'begin success');
+                    assert.isDefined(tran, 'id');
+                    assert.isDefined(tran, 'commit');
+                    assert.isDefined(tran, 'abort');
+                    tran.commit();
 
                     client.onreceive = function (frame) {
-                        assert.strictEqual(frame.body, 'abort failed');
+                        assert.strictEqual(frame.body, 'commit success');
+                        client.disconnect();
                         done();
                     };
                 };
-            };
-            tran = client.begin();
+                tran = client.begin();
+
+            }, function _failed() {
+                throw {
+                    name: "connectException",
+                    message: "connected failed."
+                };
+            });
+        });
+
+        it('[begin and abort]', function _abort(done) {
+            let sockjs = new SockJS(url);
+            let client = webstomp.over(sockjs);
+            client.connect({}, function _done() {
+                let tran;
+                client.onreceive = function (frame) {
+                    assert.strictEqual(frame.body, 'begin success');
+
+                    assert.isDefined(tran, 'id');
+                    assert.isDefined(tran, 'commit');
+                    assert.isDefined(tran, 'abort');
+                    tran.abort();
+
+                    client.onreceive = function (frame) {
+                        assert.strictEqual(frame.body, 'abort success');
+                        client.disconnect();
+                        done();
+                    };
+                };
+                tran = client.begin();
+
+            }, function _failed() {
+                throw {
+                    name: "connectException",
+                    message: "connected failed."
+                };
+            });
+
+        });
+
+        it('[begin commit and abort]', function _commitAndAbort(done) {
+            let sockjs = new SockJS(url);
+            let client = webstomp.over(sockjs);
+            client.connect({}, function _done() {
+                let tran;
+                client.onreceive = function (frame) {
+                    assert.strictEqual(frame.body, 'begin success');
+                    assert.isDefined(tran, 'id');
+                    assert.isDefined(tran, 'commit');
+                    assert.isDefined(tran, 'abort');
+                    tran.commit();
+
+                    client.onreceive = function (frame) {
+                        assert.strictEqual(frame.body, 'commit success');
+                        tran.abort();
+
+                        client.onreceive = function (frame) {
+                            assert.strictEqual(frame.body, 'abort failed');
+                            client.disconnect();
+                            done();
+                        };
+                    };
+                };
+                tran = client.begin();
+
+            }, function _failed() {
+                throw {
+                    name: "connectException",
+                    message: "connected failed."
+                };
+            });
         });
     });
 

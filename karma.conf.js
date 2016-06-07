@@ -94,7 +94,7 @@ module.exports = function (config) {
         autoWatch: true,
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['Firefox'],
+        browsers: ['Chrome'],
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits
         singleRun: false,
@@ -103,4 +103,13 @@ module.exports = function (config) {
         // how many browser should be started simultaneous
         concurrency: Infinity
     });
+    if (process.env.TRAVIS) {
+        config.customLaunchers = {
+            Chrome_travis_ci: {
+                base: 'Chrome',
+                flags: ['--no-sandbox']
+            }
+        };
+        config.browsers = ['Firefox', 'Chrome_travis_ci'];
+    }
 };
