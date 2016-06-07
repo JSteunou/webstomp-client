@@ -19,8 +19,8 @@ module.exports = function (config) {
         plugins: [
             webpack,
             'karma-mocha',
-            'karma-chrome-launcher',
-            'karma-ie-launcher'
+            'karma-firefox-launcher',
+            'karma-chrome-launcher'
         ],
         // list of files to exclude
         exclude: [],
