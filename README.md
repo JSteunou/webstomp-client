@@ -1,4 +1,4 @@
-# webstomp-client
+# webstomp-client [![Build Status](https://travis-ci.org/yeyu456/webstomp-client.svg?branch=master)](https://travis-ci.org/yeyu456/webstomp-client)
 
 This library provides a [stomp](https://stomp.github.io/) client for Web browsers and nodejs through Web Sockets.
 
