@@ -23,7 +23,6 @@ module.exports = function (config) {
             'karma-firefox-launcher',
             'karma-chrome-launcher',
             'karma-ie-launcher',
-            'karma-sauce-launcher',
             'karma-coverage'
         ],
         // list of files to exclude
@@ -76,10 +75,10 @@ module.exports = function (config) {
                 file: 'coverage.info'
             }],
             watermarks: {
-                statements: [60, 80],
-                functions: [60, 80],
-                branches: [60, 80],
-                lines: [60, 80]
+                statements: [60, 90],
+                functions: [60, 90],
+                branches: [60, 90],
+                lines: [60, 90]
             }
         }
         ,

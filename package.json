@@ -51,7 +51,6 @@
     "karma-chrome-launcher": "^1.0.1",
     "karma-ie-launcher": "^1.0.0",
     "karma-firefox-launcher": "^1.0.0",
-    "karma-sauce-launcher": "^1.0.0",
     "karma-coverage": "^1.0.0",
     "core-js": "^2.4.0"
   },

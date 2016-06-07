@@ -60,6 +60,6 @@ gulp.task('test', ['testServer'], function _test(cb) {
 });
 
 gulp.task('coverage', function _coverage(cb) {
-    return gulp.src('dist/coverage/firefox/coverage.info')
+    return gulp.src('dist/coverage/*/coverage.info')
         .pipe(coveralls());
 });
