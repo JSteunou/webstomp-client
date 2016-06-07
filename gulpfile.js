@@ -49,7 +49,7 @@ gulp.task('testServer', function _testServer(callback) {
 gulp.task('test', ['testServer'], function _test(cb) {
     new karma({
         configFile: __dirname + '/karma.conf.js'
-        //, singleRun: true
+        , singleRun: true
     }, function _testCB(code) {
         if (node) {
             node.kill();
