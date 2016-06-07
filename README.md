@@ -1,4 +1,6 @@
-# webstomp-client [![Build Status](https://travis-ci.org/yeyu456/webstomp-client.svg?branch=master)](https://travis-ci.org/yeyu456/webstomp-client)
+# webstomp-client
+[![Build Status](https://travis-ci.org/yeyu456/webstomp-client.svg?branch=master)](https://travis-ci.org/yeyu456/webstomp-client)
+[![Coverage Status](https://coveralls.io/repos/github/yeyu456/webstomp-client/badge.svg?branch=master)](https://coveralls.io/github/yeyu456/webstomp-client?branch=master)
 
 This library provides a [stomp](https://stomp.github.io/) client for Web browsers and nodejs through Web Sockets.
 
