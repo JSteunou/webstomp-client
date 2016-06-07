@@ -43,13 +43,29 @@ describe('Frame', function _webstomp() {
         let frame = new Frame('MESSAGE', {'content-length': '4'}, 'test');
         let data = Frame.marshall('MESSAGE', {}, 'test');
         assert.deepEqual(Frame.unmarshallSingle(data), frame);
+
+        data = Frame.marshall('MESSAGE', {'content-length': false}, 'test');
+        assert.deepEqual(Frame.unmarshallSingle(data), new Frame('MESSAGE', {}, 'test'));
     });
 
     it('unmarshall', function _unmarshall() {
         let frame = new Frame('MESSAGE', {'content-length': '4'}, 'test');
         let data = Frame.marshall('MESSAGE', {}, 'test');
         let r = Frame.unmarshall(data + "test");
+
         assert.deepEqual(r.frames[0], frame);
         assert.strictEqual(r.partial, "test");
+    });
+
+    it('unmarshall multiple', function _multiUnmarshall() {
+        let frame = new Frame('MESSAGE', {'content-length': '4'}, 'test');
+        let data = Frame.marshall('MESSAGE', {}, 'test');
+        let r = Frame.unmarshall(data + data);
+
+        assert.strictEqual(r.frames.length, 2);
+        assert.deepEqual(r.frames[0], frame);
+        assert.deepEqual(r.frames[1], frame);
+        assert.strictEqual(r.partial, "");
+
     });
 });

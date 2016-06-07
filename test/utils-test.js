@@ -26,6 +26,7 @@ describe('utils', function _utils() {
 
     it('typedArrayToUnicodeString', function _typedArrayToUnicodeString() {
         assert.strictEqual(utils.typedArrayToUnicodeString([32, 116, 101, 115, 116, 32]), " test ");
+        assert.strictEqual(utils.typedArrayToUnicodeString([49]), "1");
         assert.strictEqual(utils.typedArrayToUnicodeString([]), "");
         assert.strictEqual(utils.typedArrayToUnicodeString([123, 34, 116, 101, 115, 116, 34, 58, 34, 116, 101, 115, 116, 34, 125]),
             JSON.stringify({test: 'test'}));

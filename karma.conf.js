@@ -58,9 +58,7 @@ module.exports = function (config) {
             debug: true
         },
         webpackMiddleware: {
-            stats: {
-                colors: true
-            }
+            noInfo: true
         },
         reporters: ['progress', 'coverage'],
         coverageReporter: {
