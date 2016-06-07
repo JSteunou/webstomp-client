@@ -104,6 +104,12 @@ module.exports = function (config) {
         concurrency: Infinity
     });
     if (process.env.TRAVIS) {
-        config.browsers = ['Firefox'];
+        config.customLaunchers = {
+            Chrome: {
+                base: 'Chrome',
+                flags: ['--no-sandbox']
+            }
+        };
+        config.browsers = ['Firefox', 'Chrome'];
     }
 };
