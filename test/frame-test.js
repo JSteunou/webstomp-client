@@ -1,10 +1,10 @@
-import {assert} from "chai";
-import {VERSIONS, BYTES} from "./../src/utils";
-import Frame from "./../src/frame";
+import {assert} from 'chai';
+import {VERSIONS, BYTES} from './../src/utils';
+import Frame from './../src/frame';
 
-describe('Frame', function _webstomp() {
+describe('Frame', () => {
 
-    it('toString', function _toString() {
+    it('toString', () => {
         let frameStr = [
             'CONNECT',
             'accept-version:' + VERSIONS.supportedVersions(),
@@ -20,26 +20,26 @@ describe('Frame', function _webstomp() {
         assert.strictEqual(frame.toString(), frameStr);
     });
 
-    it('toStringWithBody', function _toStringWithBody() {
+    it('toStringWithBody', () => {
         let frameStr = [
             'MESSAGE',
             'content-length:4',
-            BYTES.LF + "test"
+            BYTES.LF + 'test'
         ].join(BYTES.LF);
         let frame = new Frame('MESSAGE', {}, 'test');
         assert.strictEqual(frame.toString(), frameStr);
     });
 
-    it('toStringIgnoreLength', function _toStringIgnoreLength() {
+    it('toStringIgnoreLength', () => {
         let frameStr = [
             'MESSAGE',
-            BYTES.LF + "test"
+            BYTES.LF + 'test'
         ].join(BYTES.LF);
         let frame = new Frame('MESSAGE', {'content-length': false}, 'test');
         assert.strictEqual(frame.toString(), frameStr);
     });
 
-    it('marshall and unmarshallSingle', function _single() {
+    it('marshall and unmarshallSingle', () => {
         let frame = new Frame('MESSAGE', {'content-length': '4'}, 'test');
         let data = Frame.marshall('MESSAGE', {}, 'test');
         assert.deepEqual(Frame.unmarshallSingle(data), frame);
@@ -48,16 +48,16 @@ describe('Frame', function _webstomp() {
         assert.deepEqual(Frame.unmarshallSingle(data), new Frame('MESSAGE', {}, 'test'));
     });
 
-    it('unmarshall', function _unmarshall() {
+    it('unmarshall', () => {
         let frame = new Frame('MESSAGE', {'content-length': '4'}, 'test');
         let data = Frame.marshall('MESSAGE', {}, 'test');
-        let r = Frame.unmarshall(data + "test");
+        let r = Frame.unmarshall(data + 'test');
 
         assert.deepEqual(r.frames[0], frame);
-        assert.strictEqual(r.partial, "test");
+        assert.strictEqual(r.partial, 'test');
     });
 
-    it('unmarshall multiple', function _multiUnmarshall() {
+    it('unmarshall multiple', () => {
         let frame = new Frame('MESSAGE', {'content-length': '4'}, 'test');
         let data = Frame.marshall('MESSAGE', {}, 'test');
         let r = Frame.unmarshall(data + data);
@@ -65,7 +65,6 @@ describe('Frame', function _webstomp() {
         assert.strictEqual(r.frames.length, 2);
         assert.deepEqual(r.frames[0], frame);
         assert.deepEqual(r.frames[1], frame);
-        assert.strictEqual(r.partial, "");
-
+        assert.strictEqual(r.partial, '');
     });
 });

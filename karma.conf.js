@@ -2,7 +2,7 @@
 // Generated on Sat Jun 04 2016 17:41:44 GMT+0800 (中国标准时间)
 var webpack = require('karma-webpack');
 
-module.exports = function (config) {
+module.exports = function(config) {
     config.set({
         // base path that will be used to resolve all patterns (eg. files, exclude)
         basePath: '',
@@ -54,7 +54,7 @@ module.exports = function (config) {
                 extensions: ['', '.js']
             },
             externals: {
-                "ws": "WebSocket"
+                ws:'WebSocket'
             },
             debug: true
         },
@@ -64,7 +64,7 @@ module.exports = function (config) {
         reporters: ['progress', 'coverage'],
         coverageReporter: {
             dir: 'dist/coverage/',
-            subdir: function (browser) {
+            subdir: function(browser) {
                 return browser.toLowerCase().split(/[ /-]/)[0];
             },
             reporters: [{
@@ -80,8 +80,7 @@ module.exports = function (config) {
                 branches: [60, 90],
                 lines: [60, 90]
             }
-        }
-        ,
+        },
         // web server port
         port: 1110,
         // enable / disable colors in the output (reporters and logs)

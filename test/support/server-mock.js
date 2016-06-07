@@ -1,7 +1,7 @@
 const http = require('http');
-import sockjs from "sockjs";
-import Frame from "./../../src/frame";
-import {VERSIONS} from "./../../src/utils";
+import sockjs from 'sockjs';
+import Frame from './../../src/frame';
+import {VERSIONS} from './../../src/utils';
 
 class MockServer {
 
@@ -11,7 +11,7 @@ class MockServer {
         this.prefix = prefix;
         this.subscribes = [];
         this.lastMessageId = 0;
-        this.lastTransactionId = "";
+        this.lastTransactionId = '';
     }
 
     start() {
@@ -29,7 +29,6 @@ class MockServer {
 
         this.sock = sockjs.createServer();
         this.sock.installHandlers(srv, {prefix: this.prefix});
-        let ref = this;
         this.sock.on('connection', (conn) => {
             conn.on('data', (message) => {
                 let frame = Frame.unmarshallSingle(message);
@@ -48,31 +47,31 @@ class MockServer {
                             break;
 
                         case 'SUBSCRIBE':
-                            ref._onSubscribe(conn, frame);
+                            this._onSubscribe(conn, frame);
                             break;
 
                         case 'UNSUBSCRIBE':
-                            ref._onUnSubscribe(conn, frame);
+                            this._onUnSubscribe(conn, frame);
                             break;
 
                         case 'ACK':
-                            ref._onAck(conn, frame);
+                            this._onAck(conn, frame);
                             break;
 
                         case 'NACK':
-                            ref._onNack(conn, frame);
+                            this._onNack(conn, frame);
                             break;
 
                         case 'BEGIN':
-                            ref._onBegin(conn, frame);
+                            this._onBegin(conn, frame);
                             break;
 
                         case 'COMMIT':
-                            ref._onCommit(conn, frame);
+                            this._onCommit(conn, frame);
                             break;
 
                         case 'ABORT':
-                            ref._onAbort(conn, frame);
+                            this._onAbort(conn, frame);
                             break;
 
                         default:
@@ -80,7 +79,7 @@ class MockServer {
                     }
                 }
             });
-            conn.on('close', function () {
+            conn.on('close', () => {
                 console.log('closed');
             });
         });
@@ -88,7 +87,7 @@ class MockServer {
     }
 
     static _onConnect(conn, frame) {
-        if (frame.headers.login === "username" && frame.headers.passcode === "password") {
+        if (frame.headers.login === 'username' && frame.headers.passcode === 'password') {
             conn.write(Frame.marshall('CONNECTED', {version: VERSIONS.V1_2}, 'login success'));
 
         } else if (frame.headers['heartbeat-enable']) {
@@ -111,12 +110,14 @@ class MockServer {
     }
 
     static _onSend(conn, frame) {
-        if (frame.headers.destination === "/send") {
-            if (frame.body === "test" && frame.headers.test && frame.headers["test"] === "test") {
+        if (frame.headers.destination === '/send') {
+            if (frame.body === 'test' &&
+                frame.headers.test &&
+                frame.headers.test === 'test') {
                 conn.write(Frame.marshall('MESSAGE', {}, '0'));
                 return;
             }
-        } else if (frame.headers.destination === "/largeFrame") {
+        } else if (frame.headers.destination === '/largeFrame') {
             if (parseInt(frame.headers['content-length']) !== frame.body.length) {
                 conn.write(Frame.marshall('MESSAGE', {}, frame.body));
                 return;
@@ -126,12 +127,12 @@ class MockServer {
     }
 
     _onSubscribe(conn, frame) {
-        if (frame.headers.destination === "/channel" && frame.headers.id) {
+        if (frame.headers.destination === '/channel' && frame.headers.id) {
             this.subscribes.push(frame.headers.id);
             conn.write(Frame.marshall('MESSAGE', {subscription: frame.headers.id}, '0'));
 
-        } else if ((frame.headers.destination === "/ack" || frame.headers.destination === "/nack")
-            && frame.headers.id) {
+        } else if ((frame.headers.destination === '/ack' || frame.headers.destination === '/nack') &&
+            frame.headers.id) {
             this.subscribes.push(frame.headers.id);
             conn.write(Frame.marshall('MESSAGE', {
                 subscription: frame.headers.id,
@@ -154,7 +155,7 @@ class MockServer {
 
     _onAck(conn, frame) {
         let index = this.subscribes.indexOf(frame.headers.subscription);
-        if (index > -1 && String(this.lastMessageId) === frame.headers['id']) {
+        if (index > -1 && String(this.lastMessageId) === frame.headers.id) {
             this.lastMessageId++;
             conn.write(Frame.marshall('MESSAGE', {}, 'ack success'));
         } else {
@@ -164,7 +165,7 @@ class MockServer {
 
     _onNack(conn, frame) {
         let index = this.subscribes.indexOf(frame.headers.subscription);
-        if (index > -1 && String(this.lastMessageId) === frame.headers['id']) {
+        if (index > -1 && String(this.lastMessageId) === frame.headers.id) {
             this.lastMessageId++;
             conn.write(Frame.marshall('MESSAGE', {}, 'nack success'));
         } else {
@@ -187,7 +188,7 @@ class MockServer {
         } else {
             conn.write(Frame.marshall('MESSAGE', {}, 'commit failed'));
         }
-        this.lastTransactionId = "";
+        this.lastTransactionId = '';
     }
 
     _onAbort(conn, frame) {
@@ -196,7 +197,7 @@ class MockServer {
         } else {
             conn.write(Frame.marshall('MESSAGE', {}, 'abort failed'));
         }
-        this.lastTransactionId = "";
+        this.lastTransactionId = '';
     }
 }
 

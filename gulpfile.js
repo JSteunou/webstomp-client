@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var gulp = require('gulp');
 var webpack = require('webpack');
@@ -8,7 +8,7 @@ var spawn = require('child_process').spawn;
 var coveralls = require('gulp-coveralls');
 var node;
 
-gulp.task('clean', function (cb) {
+gulp.task('clean', function(cb) {
     del.sync(['./dist/*']);
     cb();
 });
@@ -36,7 +36,7 @@ gulp.task('testServer', ['clean'], function _testServer(cb) {
         resolve: {
             extensions: ['', '.js']
         }
-    }, function (err, stats) {
+    }, function(err) {
         if (err) {
             cb(err);
 
@@ -48,9 +48,10 @@ gulp.task('testServer', ['clean'], function _testServer(cb) {
 });
 
 gulp.task('test', ['testServer'], function _test(cb) {
+    // jscs:disable requireCapitalizedConstructors
     return new karma({
-        configFile: __dirname + '/karma.conf.js'
-        , singleRun: true
+        configFile: __dirname + '/karma.conf.js',
+        singleRun: true
     }, function _testCB(code) {
         if (node) {
             node.kill();

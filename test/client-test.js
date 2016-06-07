@@ -1,156 +1,148 @@
-import {assert} from "chai";
-import webstomp from "./../src/webstomp";
-import SockJS from "sockjs-client";
+import {assert} from 'chai';
+import webstomp from './../src/webstomp';
+import SockJS from 'sockjs-client';
 
-describe('[client]', function _client() {
+describe('[client]', () => {
 
     let url = 'http://127.0.0.1:1111/stomp';
 
-    describe('[connect]', function _connect() {
+    describe('[connect]', () => {
 
-        it('[connect fail]', function (done) {
-            let sockjs = new SockJS(url + "/fail");
+        it('[connect fail]', (done) => {
+            let sockjs = new SockJS(url + '/fail');
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
 
-            }, function _failed(evt) {
-                //TODO Error callback should be make a distinction between error frame and close
-                // event.
-                if (evt && evt.hasOwnProperty("type") && evt["type"] === "close") {
+            }, (evt) => {
+                if (evt && evt.type && evt.type === 'close') {
                     assert.isFalse(client.connected);
                     done();
 
                 } else {
 
                     throw {
-                        name: "connectException",
-                        message: "connected with error frame."
+                        name: 'connectException',
+                        message: 'connected with error frame.'
                     };
                 }
             });
         });
 
-        it('[connect success]', function (done) {
+        it('[connect success]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done(frame) {
+            client.connect({}, (frame) => {
                 assert.isDefined(frame, 'command');
-                assert.strictEqual(frame.command, "CONNECTED");
+                assert.strictEqual(frame.command, 'CONNECTED');
                 assert.isTrue(client.connected);
                 done();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
 
-        it('[disconnect]', function _disconnect(done) {
+        it('[disconnect]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done(frame) {
+            client.connect({}, (frame) => {
                 assert.isTrue(client.connected);
-                client.disconnect(function _disconnectTest() {
+                client.disconnect(() => {
                     assert.isFalse(client.connected);
                     done();
                 });
                 done();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
 
-        it('[login]', function _login(done) {
+        it('[login]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect("username", "password", function _done(frame) {
+            client.connect('username', 'password', (frame) => {
                 assert.isDefined(frame, 'body');
-                assert.strictEqual(frame.body, "login success");
+                assert.strictEqual(frame.body, 'login success');
                 client.disconnect();
                 done();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
     });
 
-    describe('[send]', function _send() {
-        it('[send and message]', function _sendAndMsg(done) {
+    describe('[send]', () => {
+        it('[send and message]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 client.send('/send', 'test', {test: 'test'});
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
-            client.onreceive = function _onreceive(frame) {
+            client.onreceive = (frame) => {
                 assert.isDefined(frame, 'body');
-                assert.strictEqual(frame.body, "0");
+                assert.strictEqual(frame.body, '0');
                 done();
             };
         });
     });
 
-    describe('[error]', function _error() {
-        it('[error]', function _errorIt(done) {
+    describe('[error]', () => {
+        it('[error]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({"error-enable": "1"}, function _done() {
-
-            }, function _failed(frame) {
-                //TODO Error callback should be make a distinction between error frame and close
-                // event.
-                if (frame && frame.command === "ERROR") {
+            client.connect({'error-enable': '1'}, () => {}, (frame) => {
+                if (frame && frame.command === 'ERROR') {
                     client.disconnect();
                     done();
 
                 } else {
                     throw {
-                        name: "connectException",
-                        message: "connected failed."
+                        name: 'connectException',
+                        message: 'connected failed.'
                     };
                 }
             });
         });
     });
 
-    describe('[receipt]', function _receipt() {
-        it('[receipt]', function _receipt(done) {
+    describe('[receipt]', () => {
+        it('[receipt]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({"receipt-enable": "1"}, function _done() {
-
-            }, function _failed() {
+            client.connect({'receipt-enable': '1'}, () => {}, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
-            client.onreceipt = function _onreceipt(frame) {
+            client.onreceipt = (frame) => {
                 done();
             }
         });
     });
 
-    describe('[subscribe]', function _subscribe() {
+    describe('[subscribe]', () => {
 
         let sockjs;
         let client;
@@ -160,34 +152,34 @@ describe('[client]', function _client() {
             sockjs = new SockJS(url);
             client = webstomp.over(sockjs);
             sub = {};
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 done();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
 
-        it('[subscribe and message]', function _subscribe(done) {
-            sub = client.subscribe("/channel", function _subCB(frame) {
+        it('[subscribe and message]', (done) => {
+            sub = client.subscribe('/channel', (frame) => {
                 assert.isDefined(sub, 'id');
                 assert.isDefined(client.subscriptions[sub.id]);
                 assert.strictEqual(client.counter, 1);
 
                 assert.isDefined(frame, 'body');
-                assert.strictEqual(frame.body, "0");
+                assert.strictEqual(frame.body, '0');
 
                 done();
             });
         });
 
-        it('[subscribe and unsubscribe', function _unsubscribe(done) {
+        it('[subscribe and unsubscribe', (done) => {
             assert.isDefined(sub, 'unsubscribe');
             sub.unsubscribe();
-            client.onreceive = function _onreceive(frame) {
+            client.onreceive = (frame) => {
                 assert.isDefined(frame.headers, 'id');
                 assert.strictEqual(frame.headers.id, sub.id);
                 done();
@@ -195,68 +187,68 @@ describe('[client]', function _client() {
         });
     });
 
-    describe('[transaction]', function _transaction() {
+    describe('[transaction]', () => {
 
-        it('[ack]', function _ack(done) {
+        it('[ack]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
-                let sub = client.subscribe("/ack", function _subCB(frame) {
+            client.connect({}, () => {
+                let sub = client.subscribe('/ack', (frame) => {
                     assert.isDefined(frame, 'ack');
                     frame.ack();
                 });
-                client.onreceive = function (frame) {
+                client.onreceive = (frame) => {
                     assert.strictEqual(frame.body, 'ack success');
                     sub.unsubscribe();
                     client.disconnect();
                     done();
                 };
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
 
-        it('[nack]', function _nack(done) {
+        it('[nack]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
-                let sub = client.subscribe("/nack", function _subCB(frame) {
+            client.connect({}, () => {
+                let sub = client.subscribe('/nack', (frame) => {
                     assert.isDefined(frame, 'nack');
                     frame.nack();
                 });
-                client.onreceive = function (frame) {
+                client.onreceive = (frame) => {
                     assert.strictEqual(frame.body, 'nack success');
                     sub.unsubscribe();
                     client.disconnect();
                     done();
                 };
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
 
-        it('[begin and commit]', function _commit(done) {
+        it('[begin and commit]', (done) => {
 
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 let tran;
-                client.onreceive = function (frame) {
+                client.onreceive = (frame) => {
                     assert.strictEqual(frame.body, 'begin success');
                     assert.isDefined(tran, 'id');
                     assert.isDefined(tran, 'commit');
                     assert.isDefined(tran, 'abort');
                     tran.commit();
 
-                    client.onreceive = function (frame) {
+                    client.onreceive = (frame) => {
                         assert.strictEqual(frame.body, 'commit success');
                         client.disconnect();
                         done();
@@ -264,20 +256,20 @@ describe('[client]', function _client() {
                 };
                 tran = client.begin();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
 
-        it('[begin and abort]', function _abort(done) {
+        it('[begin and abort]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 let tran;
-                client.onreceive = function (frame) {
+                client.onreceive = (frame) => {
                     assert.strictEqual(frame.body, 'begin success');
 
                     assert.isDefined(tran, 'id');
@@ -285,7 +277,7 @@ describe('[client]', function _client() {
                     assert.isDefined(tran, 'abort');
                     tran.abort();
 
-                    client.onreceive = function (frame) {
+                    client.onreceive = (frame) => {
                         assert.strictEqual(frame.body, 'abort success');
                         client.disconnect();
                         done();
@@ -293,32 +285,32 @@ describe('[client]', function _client() {
                 };
                 tran = client.begin();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
 
         });
 
-        it('[begin commit and abort]', function _commitAndAbort(done) {
+        it('[begin commit and abort]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 let tran;
-                client.onreceive = function (frame) {
+                client.onreceive = (frame) => {
                     assert.strictEqual(frame.body, 'begin success');
                     assert.isDefined(tran, 'id');
                     assert.isDefined(tran, 'commit');
                     assert.isDefined(tran, 'abort');
                     tran.commit();
 
-                    client.onreceive = function (frame) {
+                    client.onreceive = (frame) => {
                         assert.strictEqual(frame.body, 'commit success');
                         tran.abort();
 
-                        client.onreceive = function (frame) {
+                        client.onreceive = (frame) => {
                             assert.strictEqual(frame.body, 'abort failed');
                             client.disconnect();
                             done();
@@ -327,57 +319,55 @@ describe('[client]', function _client() {
                 };
                 tran = client.begin();
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected failed."
+                    name: 'connectException',
+                    message: 'connected failed.'
                 };
             });
         });
     });
 
-    describe('[heartbeat]', function _heartbeat() {
+    describe('[heartbeat]', () => {
 
-        it('[heartbeat disconnect]', function _heartbeatDisconnect(done) {
+        it('[heartbeat disconnect]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs, {heartbeat: {outgoing: 10, incoming: 10}});
-            client.connect({"heartbeat-enable": "1"}, function _done(frame) {
+            client.connect({'heartbeat-enable': '1'}, (frame) => {
                 assert.isDefined(frame.headers, 'heart-beat');
 
-            }, function _failed(evt) {
-                //TODO Error callback should be make a distinction between error frame and close
-                // event.
-                if (evt && evt.hasOwnProperty("type") && evt["type"] === "close") {
+            }, (evt) => {
+                if (evt && evt.type && evt.type === 'close') {
                     assert.isFalse(client.connected);
                     done();
 
                 } else {
                     throw {
-                        name: "connectException",
-                        message: "connected with error frame."
+                        name: 'connectException',
+                        message: 'connected with error frame.'
                     };
                 }
             });
         });
     });
 
-    describe('[largeFrame]', function _largeFrame() {
+    describe('[largeFrame]', () => {
 
-        it('[largeFrame]', function _largeFrameIt(done) {
+        it('[largeFrame]', (done) => {
             let sockjs = new SockJS(url);
             let client = webstomp.over(sockjs);
             let content = '1234567890';
-            client.connect({}, function _done() {
+            client.connect({}, () => {
                 client.maxWebSocketFrameSize = 50;
                 client.send('/largeFrame', content, {});
 
-            }, function _failed() {
+            }, () => {
                 throw {
-                    name: "connectException",
-                    message: "connected with error frame."
+                    name: 'connectException',
+                    message: 'connected with error frame.'
                 };
             });
-            client.onreceive = function _onreceive(frame) {
+            client.onreceive = (frame) => {
                 assert.notStrictEqual(frame.body, content);
                 done();
             }
