@@ -9,9 +9,6 @@ env :
     - BROWSSER=chromium_browser
 addons:
   firefox: 'latest'
-  sauce_connect:
-      username: "yeyu456"
-      access_key: "711c3db6-9858-4418-aa05-2e74d9d83601"
 cache:
   directories:
     - node_modules
