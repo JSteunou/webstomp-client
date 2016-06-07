@@ -11,6 +11,7 @@ module.exports = function (config) {
         frameworks: ['mocha'],
         // list of files / patterns to load in the browser
         files: [
+            'node_modules/core-js/client/core.js',
             'test/utils-test.js',
             'test/frame-test.js',
             'test/webstomp-test.js',
@@ -21,6 +22,7 @@ module.exports = function (config) {
             'karma-mocha',
             'karma-firefox-launcher',
             'karma-chrome-launcher',
+            'karma-ie-launcher',
             'karma-sauce-launcher',
             'karma-coverage'
         ],
@@ -92,7 +94,7 @@ module.exports = function (config) {
         autoWatch: true,
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['Chrome'],
+        browsers: ['IE', 'Chrome'],
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits
         singleRun: false,
