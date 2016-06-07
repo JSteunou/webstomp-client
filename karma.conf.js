@@ -34,18 +34,20 @@ module.exports = function (config) {
         },
         webpack: {
             module: {
+                preLoaders: [
+                    {
+                        test: /\.js$/,
+                        loader: 'isparta',
+                        exclude: /(node_modules|test)/
+                    }
+                ],
                 loaders: [
                     {
                         test: /\.js$/,
                         loader: 'babel-loader',
                         exclude: /node_modules/
                     }
-                ],
-                postLoaders: [{
-                    test: /\.js$/,
-                    exclude: /(node_modules|test)/,
-                    loader: 'istanbul-instrumenter'
-                }]
+                ]
             },
             resolve: {
                 extensions: ['', '.js']
@@ -92,7 +94,7 @@ module.exports = function (config) {
         autoWatch: true,
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['Firefox'],
+        browsers: ['Chrome'],
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits
         singleRun: false,
