@@ -104,6 +104,85 @@ module.exports = function (config) {
         concurrency: Infinity
     });
     if (process.env.TRAVIS) {
-        config.browsers = ['Firefox'];
+        var customLaunchers = {
+            chrome_50: {
+                base: 'SauceLabs',
+                browserName: 'chrome',
+                platform: 'Windows 7',
+                version: '46.0'
+            },
+            chrome_beta: {
+                base: 'SauceLabs',
+                browserName: 'chrome',
+                platform: 'Windows 7',
+                version: 'beta'
+            },
+            firefox_46: {
+                base: 'SauceLabs',
+                browserName: 'firefox',
+                platform: 'Windows 7',
+                version: '46.0'
+            },
+            firefox_beta: {
+                base: 'SauceLabs',
+                browserName: 'firefox',
+                platform: 'Windows 7',
+                version: 'beta'
+            },
+            ie_6: {
+                base: 'SauceLabs',
+                browserName: 'internet explorer',
+                platform: 'Windows XP',
+                version: '6.0'
+            },
+            ie_7: {
+                base: 'SauceLabs',
+                browserName: 'internet explorer',
+                platform: 'Windows XP',
+                version: '7.0'
+            },
+            ie_8: {
+                base: 'SauceLabs',
+                browserName: 'internet explorer',
+                platform: 'Windows XP',
+                version: '8.0'
+            },
+            ie_9: {
+                base: 'SauceLabs',
+                browserName: 'internet explorer',
+                platform: 'Windows 7',
+                version: '9.0'
+            },
+            ie_10: {
+                base: 'SauceLabs',
+                browserName: 'internet explorer',
+                platform: 'Windows 7',
+                version: '10.0'
+            },
+            ie_11: {
+                base: 'SauceLabs',
+                browserName: 'internet explorer',
+                platform: 'Windows 7',
+                version: '11.0'
+            },
+            iphone_90: {
+                base: 'SauceLabs',
+                browserName: 'iphone',
+                platform: 'OS X 10.10',
+                version: '9.0'
+            },
+            iphone_92: {
+                base: 'SauceLabs',
+                browserName: 'iphone',
+                platform: 'OS X 10.10',
+                version: '9.2'
+            }
+        };
+        config.reporters.push('saucelabs');
+        config.sauceLabs = {
+            testName: 'Unit Tests'
+        };
+        config.customLaunchers = customLaunchers;
+        config.browsers = Object.keys(customLaunchers);
     }
 };
