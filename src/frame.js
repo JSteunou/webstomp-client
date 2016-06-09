@@ -4,7 +4,7 @@ import {BYTES, sizeOfUTF8, trim} from './utils';
 class Frame {
 
     // Frame constructor
-    constructor(command, headers={}, body='') {
+    constructor(command, headers = {}, body = '') {
         this.command = command;
         this.headers = headers;
         this.body = body;
@@ -42,8 +42,8 @@ class Frame {
             headers = {},
             body = '',
             // skip the 2 LF bytes that divides the headers from the body
-            bodyIndex = divider + 2
-        ;
+            bodyIndex = divider + 2;
+
         // Parse headers in reverse order so that for repeated headers, the 1st
         // value is used
         for (let line of headerLines.reverse()) {
@@ -84,8 +84,7 @@ class Frame {
             r = {
                 frames: firstFrames.map(f => Frame.unmarshallSingle(f)),
                 partial: ''
-            }
-        ;
+            };
 
         // If this contains a final full message or just a acknowledgement of a PING
         // without any other content, process this frame, otherwise return the

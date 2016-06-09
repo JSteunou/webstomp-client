@@ -6,7 +6,7 @@ const webstomp = {
     VERSIONS,
     // This method creates a WebSocket client that is connected to
     // the STOMP server located at the url.
-    client: function(url, options={protocols: VERSIONS.supportedProtocols()}) {
+    client: function(url, options = {protocols: VERSIONS.supportedProtocols()}) {
         let ws = new WebSocket(url, options.protocols);
         return new Client(ws, options);
     },

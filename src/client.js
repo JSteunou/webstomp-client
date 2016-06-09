@@ -7,7 +7,7 @@ import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray} f
 // `send()`, etc.)
 class Client {
 
-    constructor(ws, options={binary:false, heartbeat: {outgoing:10000, incoming:10000}, debug:true}) {
+    constructor(ws, options = {binary: false, heartbeat: {outgoing: 10000, incoming: 10000}, debug: true}) {
         this.ws = ws;
         this.ws.binaryType = 'arraybuffer';
         this.binary = options.binary;
@@ -154,7 +154,7 @@ class Client {
     }
 
     // [DISCONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#DISCONNECT)
-    disconnect(disconnectCallback, headers={}) {
+    disconnect(disconnectCallback, headers = {}) {
         this._transmit('DISCONNECT', headers);
         // Discard the onclose callback to avoid calling the errorCallback when
         // the client is properly disconnected.
@@ -168,7 +168,7 @@ class Client {
     // [SEND Frame](http://stomp.github.com/stomp-specification-1.1.html#SEND)
     //
     // * `destination` is MANDATORY.
-    send(destination, body='', headers={}) {
+    send(destination, body = '', headers = {}) {
         headers.destination = destination;
         this._transmit('SEND', headers, body);
     }
@@ -176,7 +176,7 @@ class Client {
     // [BEGIN Frame](http://stomp.github.com/stomp-specification-1.1.html#BEGIN)
     //
     // If no transaction ID is passed, one will be created automatically
-    begin(transaction=`tx-${this.counter++}`) {
+    begin(transaction = `tx-${this.counter++}`) {
         this._transmit('BEGIN', {transaction});
         return {
             id: transaction,
@@ -228,7 +228,7 @@ class Client {
     //       },
     //       {'ack': 'client'}
     //     );
-    ack(messageID, subscription, headers={}) {
+    ack(messageID, subscription, headers = {}) {
         // 1.2 change id header name from message-id to id
         var idAttr = this.version === VERSIONS.V1_2 ? 'id' : 'message-id';
         headers[idAttr] = messageID;
@@ -251,7 +251,7 @@ class Client {
     //       },
     //       {'ack': 'client'}
     //     );
-    nack(messageID, subscription, headers={}) {
+    nack(messageID, subscription, headers = {}) {
         // 1.2 change id header name from message-id to id
         var idAttr = this.version === VERSIONS.V1_2 ? 'id' : 'message-id';
         headers[idAttr] = messageID;
@@ -260,7 +260,7 @@ class Client {
     }
 
     // [SUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#SUBSCRIBE)
-    subscribe(destination, callback, headers={}) {
+    subscribe(destination, callback, headers = {}) {
         // for convenience if the `id` header is not set, we create a new one for this client
         // that will be returned to be able to unsubscribe this subscription
         if (!headers.id) headers.id = 'sub-' + this.counter++;
@@ -283,7 +283,7 @@ class Client {
     //     var subscription = client.subscribe(destination, onmessage);
     //     ...
     //     subscription.unsubscribe(headers);
-    unsubscribe(id, headers={}) {
+    unsubscribe(id, headers = {}) {
         delete this.subscriptions[id];
         headers.id = id;
         this._transmit('UNSUBSCRIBE', headers);

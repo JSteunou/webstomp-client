@@ -1,0 +1,259 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    /*
+    * ENVIRONMENTS
+    * =================
+    */
+    "env": {
+
+        // Define globals exposed by modern browsers.
+        "browser": true,
+
+        // Allow CommonJS writing
+        "node": true,
+
+        // es2015
+        "es6":true,
+
+        // mocha test framework
+        "mocha":true
+    },
+
+    "globals": {
+
+    },
+
+    "rules": {
+
+        /*
+        * ENFORCING OPTIONS
+        * =================
+        */
+
+        // Prohibits use of == and != in favor of === and !==.
+        "eqeqeq": 2,
+
+        // Requires all for in loops to filter object's items.
+        "guard-for-in": 2,
+
+        // Prohibits overwriting prototypes of native objects such as Array, Date and so on.
+        "no-extend-native": 2,
+
+        // Prohibits use of a variable before it is defined.
+        "no-use-before-define": 2,
+
+        // Prohibits the use of arguments.caller and arguments.callee.
+        "no-caller": 2,
+
+        // Prohibits the use of the comma operator.
+        "no-sequences": 2,
+
+        // Warns about "non-breaking whitespace" characters.
+        "no-irregular-whitespace": 2,
+
+        // Prohibits the use of constructor functions for side-effects.
+        "no-new": 2,
+
+        // Nope, thanks to strict-loader for webpack & use-strict module for node
+        "strict": 0,
+
+        // Prohibits use of explicitly undeclared variables.
+        "no-undef": 2,
+
+        // Warns when variables are defined but never used.
+        "no-unused-vars": 2,
+
+        // requireCurlyBraces
+        "curly": [
+            2,
+            "multi-line",
+            "consistent"
+        ],
+
+        "keyword-spacing": [
+            2,
+            {
+                "before": true,
+                //requireSpaceAfterKeywords
+                "after": true
+            }
+        ],
+
+        //requireSpaceBeforeBlockStatements
+        "space-before-blocks": [
+            2,
+            {
+                //requireSpacesInFunctionExpression
+                //requireSpacesInAnonymousFunctionExpression
+                "functions": "always",
+                "keywords": "always",
+                "classes": "always"
+            }
+        ],
+
+        //requireParenthesesAroundIIFE
+        "wrap-iife": 2,
+
+        "space-before-function-paren": [
+            2,
+            {
+                //disallowSpacesInAnonymousFunctionExpression
+                "anonymous": "never",
+
+                //disallowSpacesInFunctionExpression
+                "named": "never"
+            }
+        ],
+
+        //disallowEmptyBlocks
+        "no-empty": 2,
+
+        //disallowSpacesInsideArrayBrackets
+        "array-bracket-spacing": [
+            2,
+            "never"
+        ],
+
+        //disallowSpacesInsideParentheses
+        "space-in-parens": [
+            2,
+            "never"
+        ],
+
+        //disallowQuotedKeysInObjects
+        "quote-props": [
+            2,
+            "as-needed",
+            {
+                "keywords": true
+            }
+        ],
+
+        //disallowSpaceAfterObjectKeys
+        "key-spacing": [
+            2,
+            {
+                "beforeColon": false,
+                "afterColon": true
+            }
+        ],
+
+        //requireCommaBeforeLineBreak
+        "comma-style": [
+            2,
+            "last"
+        ],
+
+        //requireOperatorBeforeLineBreak
+        "operator-linebreak": [
+            2,
+            "after"
+        ],
+
+        //disallowSpaceBeforePostfixUnaryOperators
+        "space-unary-ops": [
+            2,
+            {
+                "words": false,
+                "nonwords": false,
+
+                //requireSpaceBeforeBinaryOperators
+                //requireSpaceAfterBinaryOperators
+                "overrides" :{
+                    "=":true,
+                    "==":true,
+                    "===":true,
+                    "!=":true,
+                    "!==":true,
+                    "||":true,
+                    "&&":true
+                }
+            }
+        ],
+
+        //requireSpaceAfterBinaryOperators ","
+        "comma-spacing":[
+            2,
+            {
+                "before": false,
+                "after": true
+            }
+        ],
+
+        //requireSpacesInConditionalExpression
+        "space-infix-ops": 2,
+
+        //requireCamelCaseOrUpperCaseIdentifiers
+        "camelcase": [
+            2,
+            {
+                "properties": "always"
+            }
+        ],
+
+        //disallowKeywords
+        "no-with": 2,
+
+        //disallowMultipleLineStrings
+        "no-multi-str": 2,
+
+        //validateQuoteMarks
+        "quotes": [
+            2,
+            "single",
+            "avoid-escape"
+        ],
+
+        //validateIndentation
+        "indent": [
+            2,
+            4,
+            {
+                "SwitchCase": 1,
+                "VariableDeclarator": 1
+            }
+        ],
+
+        //disallowMixedSpacesAndTabs
+        "no-mixed-spaces-and-tabs": 2,
+
+        //disallowTrailingWhitespace
+        "no-trailing-spaces": 2,
+
+        //disallowTrailingComma
+        "comma-dangle": [
+            2,
+            "never"
+        ],
+
+        //disallowKeywordsOnNewLine
+        "brace-style": 2,
+
+        //requireCapitalizedConstructors
+        "new-cap": 2,
+
+        //safeContextKeyword
+        "consistent-this": [
+            2,
+            "that"
+        ],
+
+        //requireDotNotation
+        "dot-notation": 2,
+
+        //jsDoc
+        "valid-jsdoc": 2,
+
+        //requireSpaceAfterLineComment
+        "spaced-comment": [
+            2,
+            "always"
+        ],
+
+        //requireLineFeedAtFileEnd
+        "eol-last": 2
+    }
+}

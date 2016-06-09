@@ -1,3 +1,8 @@
+# next
+
+* Replace jshint & jscs by eslint (thanks @yeyu456)
+
+
 # 1.0.2 - 09 Apr. 2016
 
 * Add an example using nodejs
