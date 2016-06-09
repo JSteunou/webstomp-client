@@ -156,7 +156,7 @@
         ],
 
         /*disallowSpaceAfterPrefixUnaryOperators
-        * TODO This rule cannot specifit before or after.
+        * TODO This rule cannot define before or after.
         * Not completely compatible with original rule.
         */
         //disallowSpaceBeforePostfixUnaryOperators
