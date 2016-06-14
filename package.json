@@ -40,8 +40,6 @@
     "ws": "^1.0.1",
     "sockjs": "^0.3.17",
     "sockjs-client": "^1.1.1",
-    "gulp": "^3.9.1",
-    "gulp-coveralls": "^0.1.4",
     "del": "^2.2.0",
     "mocha": "^2.5.3",
     "chai": "^3.5.0",
@@ -52,10 +50,12 @@
     "karma-ie-launcher": "^1.0.0",
     "karma-firefox-launcher": "^1.0.0",
     "karma-coverage": "^1.0.0",
+    "coveralls": "^2.11.10",
     "core-js": "^2.4.0"
   },
   "scripts": {
-    "test": "gulp test",
+    "test": "node ./test/test.js",
+    "coverage": "cat ./test/tmp/coverage/chrome/coverage.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "build": "webpack && webpack -p --config webpack.min.config.js",
     "dev": "webpack --watch",
     "example": "webpack && opn http://localhost:8080/example & http-server",

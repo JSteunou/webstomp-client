@@ -1,5 +1,4 @@
 // Karma configuration
-// Generated on Sat Jun 04 2016 17:41:44 GMT+0800 (中国标准时间)
 var webpack = require('karma-webpack');
 
 module.exports = function(config) {
@@ -30,7 +29,7 @@ module.exports = function(config) {
         // preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
         preprocessors: {
-            'test/*.js': ['webpack'],
+            'test/!(test).js': ['webpack'],
             'src/**/*.js': ['webpack']
         },
         webpack: {
@@ -55,15 +54,14 @@ module.exports = function(config) {
             },
             externals: {
                 ws:'WebSocket'
-            },
-            debug: true
+            }
         },
         webpackMiddleware: {
-            noInfo: true
+            noInfo:true
         },
         reporters: ['progress', 'coverage'],
         coverageReporter: {
-            dir: 'dist/coverage/',
+            dir: 'test/tmp/coverage/',
             subdir: function(browser) {
                 return browser.toLowerCase().split(/[ /-]/)[0];
             },
@@ -87,7 +85,7 @@ module.exports = function(config) {
         colors: true,
         // level of logging
         // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
-        logLevel: config.LOG_INFO,
+        logLevel: config.LOG_DISABLE,
         // enable / disable watching file and executing tests whenever any file changes
         autoWatch: true,
         // start these browsers
