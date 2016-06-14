@@ -67,10 +67,10 @@
         "no-unused-vars": 2,
 
         // requireCurlyBraces
-        // TODO Not completely compatible with original rule.
         "curly": [
             2,
-            "all"
+            "multi-line",
+            "consistent"
         ],
 
         "keyword-spacing": [
