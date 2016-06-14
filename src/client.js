@@ -46,6 +46,18 @@ class Client {
         if (this.hasDebug) console.log(...args);
     }
 
+    on(event) {
+        if (event && Reflect.get(event)) {
+            let p = new Promise((resolve, reject) => {
+                resolve();
+                reject();
+            });
+            return p;
+        } else {
+            throw new Error();
+        }
+    }
+
     // [CONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECT_or_STOMP_Frame)
     //
     // The `connect` method accepts different number of arguments and types:
@@ -59,110 +71,53 @@ class Client {
     // The errorCallback is optional and the 2 first forms allow to pass other
     // headers in addition to `client`, `passcode` and `host`.
     connect(...args) {
-        let [headers, connectCallback, errorCallback] = this._parseConnect(...args);
-        this.connectCallback = connectCallback;
-        this.debug('Opening Web Socket...');
-        this.ws.onmessage = (evt) => {
-            let data = evt.data;
-            if (evt.data instanceof ArrayBuffer) {
-                data = typedArrayToUnicodeString(new Uint8Array(evt.data));
-            }
-            this.serverActivity = Date.now();
-            // heartbeat
-            if (data === BYTES.LF) {
-                this.debug('<<< PONG');
-                return;
-            }
-            this.debug(`<<< ${data}`);
-            // Handle STOMP frames received from the server
-            // The unmarshall function returns the frames parsed and any remaining
-            // data from partial frames.
-            const unmarshalledData = Frame.unmarshall(this.partialData + data);
-            this.partialData = unmarshalledData.partial;
-            unmarshalledData.frames.forEach(frame => {
-                switch (frame.command) {
-                    // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
-                    case 'CONNECTED':
-                        this.debug(`connected to server ${frame.headers.server}`);
-                        this.connected = true;
-                        this.version = frame.headers.version;
-                        this._setupHeartbeat(frame.headers);
-                        if (connectCallback) connectCallback(frame);
-                        break;
-                    // [MESSAGE Frame](http://stomp.github.com/stomp-specification-1.1.html#MESSAGE)
-                    case 'MESSAGE':
-                        // the `onreceive` callback is registered when the client calls
-                        // `subscribe()`.
-                        // If there is registered subscription for the received message,
-                        // we used the default `onreceive` method that the client can set.
-                        // This is useful for subscriptions that are automatically created
-                        // on the browser side (e.g. [RabbitMQ's temporary
-                        // queues](http://www.rabbitmq.com/stomp.html)).
-                        const subscription = frame.headers.subscription;
-                        const onreceive = this.subscriptions[subscription] || this.onreceive;
-                        if (onreceive) {
-                            // 1.2 define ack header if ack is set to client
-                            // and this header must be used for ack/nack
-                            const messageID = this.version === VERSIONS.V1_2 &&
-                                frame.headers.ack ||
-                                frame.headers['message-id'];
-                            // add `ack()` and `nack()` methods directly to the returned frame
-                            // so that a simple call to `message.ack()` can acknowledge the message.
-                            frame.ack = this.ack.bind(this, messageID, subscription);
-                            frame.nack = this.nack.bind(this, messageID, subscription);
-                            onreceive(frame);
-                        } else {
-                            this.debug(`Unhandled received MESSAGE: ${frame}`);
-                        }
-                        break;
-                    // [RECEIPT Frame](http://stomp.github.com/stomp-specification-1.1.html#RECEIPT)
-                    //
-                    // The client instance can set its `onreceipt` field to a function taking
-                    // a frame argument that will be called when a receipt is received from
-                    // the server:
-                    //
-                    //     client.onreceipt = function(frame) {
-                    //       receiptID = frame.headers['receipt-id'];
-                    //       ...
-                    //     }
-                    case 'RECEIPT':
-                        if (this.onreceipt) this.onreceipt(frame);
-                        break;
-                    // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
-                    case 'ERROR':
-                        if (errorCallback) errorCallback(frame);
-                        break;
-                    default:
-                        this.debug(`Unhandled frame: ${frame}`);
-                }
-            });
-        };
-        this.ws.onclose = (ev) => {
-            this.debug(`Whoops! Lost connection to ${this.ws.url}:`, ev);
-            this._cleanUp();
-            if (errorCallback) errorCallback(ev);
-        };
-        this.ws.onopen = () => {
-            this.debug('Web Socket Opened...');
-            headers['accept-version'] = VERSIONS.supportedVersions();
-            // Check if we already have heart-beat in headers before adding them
-            if (!headers['heart-beat']) {
-                headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
-            }
-            this._transmit('CONNECT', headers);
-        };
+        let p = new Promise((resolve, reject) => {
+            let headers = this._parseConnect(...args);
+            this.debug('Opening Web Socket...');
+            this.ws.onmessage = (evt) => {
+                const unmarshalledData = Client._getData(evt);
+                this.serverActivity = Date.now();
+                unmarshalledData.frames.forEach(frame => {
+                    switch (frame.command) {
+                        // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
+                        case 'CONNECTED':
+                            this._connected(resolve, frame);
+                            break;
+                        // [MESSAGE Frame](http://stomp.github.com/stomp-specification-1.1.html#MESSAGE)
+                        case 'MESSAGE':
+                            this._message(frame);
+                            break;
+                        // [RECEIPT Frame](http://stomp.github.com/stomp-specification-1.1.html#RECEIPT)
+                        case 'RECEIPT':
+                            this.receipt(frame);
+                            break;
+                        // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
+                        case 'ERROR':
+                            this.error(frame);
+                            break;
+                        default:
+                            this._unhandle(frame);
+                    }
+                });
+            };
+            this.ws.onclose = (ev) => {
+                this._close(reject, ev);
+            };
+            this.ws.onopen = () => {
+                this._open(headers);
+            };
+        });
+        return p;
     }
 
     // [DISCONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#DISCONNECT)
-    disconnect(disconnectCallback, headers={}) {
+    disconnect(headers = {}) {
         this._transmit('DISCONNECT', headers);
         // Discard the onclose callback to avoid calling the errorCallback when
         // the client is properly disconnected.
         this.ws.onclose = null;
         this.ws.close();
         this._cleanUp();
-        // TODO: what's the point of this callback disconnect is not async
-        if (disconnectCallback) disconnectCallback();
     }
 
     // [SEND Frame](http://stomp.github.com/stomp-specification-1.1.html#SEND)
@@ -289,8 +244,6 @@ class Client {
         this._transmit('UNSUBSCRIBE', headers);
     }
 
-
-
     // Clean up client resources when it is disconnected or the server did not
     // send heart beats in a timely fashion
     _cleanUp() {
@@ -354,31 +307,124 @@ class Client {
         }
     }
 
-    // parse the arguments number and type to find the headers, connectCallback and
-    // (eventually undefined) errorCallback
-    _parseConnect(...args) {
-        let headers = {}, connectCallback, errorCallback;
-        switch (args.length) {
-            case 2:
-                [headers, connectCallback] = args;
-                break;
-            case 3:
-                if (args[1] instanceof Function) {
-                    [headers, connectCallback, errorCallback] = args;
-                } else {
-                    [headers.login, headers.passcode, connectCallback] = args;
-                }
-                break;
-            case 4:
-                [headers.login, headers.passcode, connectCallback, errorCallback] = args;
-                break;
-            default:
-                [headers.login, headers.passcode, connectCallback, errorCallback, headers.host] = args;
+    _connected(connectCallback, frame) {
+        this.debug(`connected to server ${frame.headers.server}`);
+        this.connected = true;
+        this.version = frame.headers.version;
+        this._setupHeartbeat(frame.headers);
+        if (connectCallback) {
+            connectCallback(frame);
         }
-
-        return [headers, connectCallback, errorCallback];
     }
 
+    _open(headers) {
+        this.debug('Web Socket Opened...');
+        headers['accept-version'] = VERSIONS.supportedVersions();
+        // Check if we already have heart-beat in headers before adding them
+        if (!headers['heart-beat']) {
+            headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
+        }
+        this._transmit('CONNECT', headers);
+    }
+
+    _close(errorCallback, ev) {
+        this.debug(`Whoops! Lost connection to ${this.ws.url}:`, ev);
+        this._cleanUp();
+        if (errorCallback) {
+            errorCallback(ev);
+        }
+    }
+
+    _message(frame) {
+        // the `onreceive` callback is registered when the client calls
+        // `subscribe()`.
+        // If there is registered subscription for the received message,
+        // we used the default `onreceive` method that the client can set.
+        // This is useful for subscriptions that are automatically created
+        // on the browser side (e.g. [RabbitMQ's temporary
+        // queues](http://www.rabbitmq.com/stomp.html)).
+        const subscription = frame.headers.subscription;
+        const onreceive = this.subscriptions[subscription] || this.receive;
+        if (onreceive) {
+            // 1.2 define ack header if ack is set to client
+            // and this header must be used for ack/nack
+            const messageID = this.version === VERSIONS.V1_2 &&
+                frame.headers.ack ||
+                frame.headers['message-id'];
+            // add `ack()` and `nack()` methods directly to the returned frame
+            // so that a simple call to `message.ack()` can acknowledge the message.
+            frame.ack = this.ack.bind(this, messageID, subscription);
+            frame.nack = this.nack.bind(this, messageID, subscription);
+            onreceive(frame);
+        } else {
+            this.debug(`Unhandled received MESSAGE: ${frame}`);
+        }
+    }
+
+    receive(frame) {
+        this.debug(`Receive frame: ${frame}`);
+    }
+
+    receipt(frame) {
+        // The client instance can set its `onreceipt` field to a function taking
+        // a frame argument that will be called when a receipt is received from
+        // the server:
+        //
+        //     client.onreceipt = function(frame) {
+        //       receiptID = frame.headers['receipt-id'];
+        //       ...
+        //     }
+        if (this.onreceipt) {
+            this.onreceipt(frame);
+        }
+    }
+
+    error(frame) {
+        this.debug(`Error frame: ${frame}`);
+    }
+
+    _unhandle(frame) {
+        this.debug(`Unhandled frame: ${frame}`);
+    }
+
+    _getData(evt) {
+        let data = evt.data;
+        if (evt.data instanceof ArrayBuffer) {
+            data = typedArrayToUnicodeString(new Uint8Array(evt.data));
+        }
+        // heartbeat
+        if (data === BYTES.LF) {
+            this.debug('<<< PONG');
+            return undefined;
+        }
+        this.debug(`<<< ${data}`);
+        // Handle STOMP frames received from the server
+        // The unmarshall function returns the frames parsed and any remaining
+        // data from partial frames.
+        data = Frame.unmarshall(this.partialData + data);
+        this.partialData = data.partial;
+        return data;
+    }
+
+    // parse the arguments number and type to find the headers, connectCallback and
+    // (eventually undefined) errorCallback
+    static _parseConnect(...args) {
+        let headers = {};
+        switch (args.length) {
+            case 1:
+                headers = args;
+                break;
+            case 2:
+                [headers.login, headers.passcode] = args;
+                break;
+            case 3:
+                [headers.login, headers.passcode, headers.host] = args;
+                break;
+            default:
+                break;
+        }
+        return headers;
+    }
 }
 
 export default Client;
