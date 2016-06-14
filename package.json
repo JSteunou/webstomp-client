@@ -55,7 +55,7 @@
   },
   "scripts": {
     "test": "node ./test/test.js",
-    "coverage": "cat ./test/tmp/coverage/chrome/coverage.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
+    "coverage": "cat ./test/tmp/coverage/chrome/coverage.info | ./node_modules/coveralls/bin/coveralls.js",
     "build": "webpack && webpack -p --config webpack.min.config.js",
     "dev": "webpack --watch",
     "example": "webpack && opn http://localhost:8080/example & http-server",
