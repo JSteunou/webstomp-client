@@ -1,5 +1,6 @@
 # next
 
+* Add check to see if user has already included heart beat information in headers before adding default values (thanks @NathanGloyn)
 * Replace jshint & jscs by eslint (thanks @yeyu456)
 
 
