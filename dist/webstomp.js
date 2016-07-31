@@ -282,7 +282,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.ws.onopen = function () {
 	                _this.debug('Web Socket Opened...');
 	                headers['accept-version'] = _utils.VERSIONS.supportedVersions();
-	                headers['heart-beat'] = [_this.heartbeat.outgoing, _this.heartbeat.incoming].join(',');
+	                // Check if we already have heart-beat in headers before adding them
+	                if (!headers['heart-beat']) {
+	                    headers['heart-beat'] = [_this.heartbeat.outgoing, _this.heartbeat.incoming].join(',');
+	                }
 	                _this._transmit('CONNECT', headers);
 	            };
 	        }
@@ -683,6 +686,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            // skip the 2 LF bytes that divides the headers from the body
 	            bodyIndex = divider + 2;
+
 	            // Parse headers in reverse order so that for repeated headers, the 1st
 	            // value is used
 	            var _iteratorNormalCompletion = true;

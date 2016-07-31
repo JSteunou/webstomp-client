@@ -1,7 +1,8 @@
-# next
+# 1.0.3 - 31 July 2016
 
 * Add check to see if user has already included heart beat information in headers before adding default values (thanks @NathanGloyn)
 * Replace jshint & jscs by eslint (thanks @yeyu456)
+* Add *dist* folder to github so users without npm and ES6 support can fetch the lib
 
 
 # 1.0.2 - 09 Apr. 2016
