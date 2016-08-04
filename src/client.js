@@ -7,11 +7,14 @@ import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray} f
 // `send()`, etc.)
 class Client {
 
-    constructor(ws, options = {binary: false, heartbeat: {outgoing: 10000, incoming: 10000}, debug: true}) {
+    constructor(ws, options = {}) {
+        // cannot have default options object + destructuring in the same time in method signature
+        let {binary = false, heartbeat = {outgoing: 10000, incoming: 10000}, debug = true} = options;
+
         this.ws = ws;
         this.ws.binaryType = 'arraybuffer';
-        this.binary = options.binary;
-        this.hasDebug = options.debug;
+        this.isBinary = !!binary;
+        this.hasDebug = !!debug;
         // used to index subscribers
         this.counter = 0;
         this.connected = false;
@@ -19,7 +22,7 @@ class Client {
         // outgoing: send heartbeat every 10s by default (value is in ms)
         // incoming: expect to receive server heartbeat at least every 10s by default
         // falsy value means no heartbeat hence 0,0
-        this.heartbeat = options.heartbeat || {outgoing: 0, incoming: 0};
+        this.heartbeat = heartbeat || {outgoing: 0, incoming: 0};
         // maximum *WebSocket* frame size sent by the client. If the STOMP frame
         // is bigger than this value, the STOMP frame will be sent using multiple
         // WebSocket frames (default is 16KiB)
@@ -307,7 +310,7 @@ class Client {
     }
 
     _wsSend(data) {
-        if (this.binary) data = unicodeStringToTypedArray(data);
+        if (this.isBinary) data = unicodeStringToTypedArray(data);
         this.debug(`>>> length ${data.length}`);
         // if necessary, split the *STOMP* frame to send it on many smaller
         // *WebSocket* frames
