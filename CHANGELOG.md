@@ -1,3 +1,8 @@
+# 1.0.4 - 04 Aug. 2016
+
+* Fixes default options value when an options object is already given with missing values
+
+
 # 1.0.3 - 31 July 2016
 
 * Add check to see if user has already included heart beat information in headers before adding default values (thanks @NathanGloyn)

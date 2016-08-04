@@ -122,17 +122,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	//
 	// All STOMP protocol is exposed as methods of this class (`connect()`,
 	// `send()`, etc.)
-
 	var Client = function () {
 	    function Client(ws) {
-	        var options = arguments.length <= 1 || arguments[1] === undefined ? { binary: false, heartbeat: { outgoing: 10000, incoming: 10000 }, debug: true } : arguments[1];
+	        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
 	        _classCallCheck(this, Client);
 
+	        // cannot have default options object + destructuring in the same time in method signature
+	        var _options$binary = options.binary;
+	        var binary = _options$binary === undefined ? false : _options$binary;
+	        var _options$heartbeat = options.heartbeat;
+	        var heartbeat = _options$heartbeat === undefined ? { outgoing: 10000, incoming: 10000 } : _options$heartbeat;
+	        var _options$debug = options.debug;
+	        var debug = _options$debug === undefined ? true : _options$debug;
+
+
 	        this.ws = ws;
 	        this.ws.binaryType = 'arraybuffer';
-	        this.binary = options.binary;
-	        this.hasDebug = options.debug;
+	        this.isBinary = !!binary;
+	        this.hasDebug = !!debug;
 	        // used to index subscribers
 	        this.counter = 0;
 	        this.connected = false;
@@ -140,7 +148,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // outgoing: send heartbeat every 10s by default (value is in ms)
 	        // incoming: expect to receive server heartbeat at least every 10s by default
 	        // falsy value means no heartbeat hence 0,0
-	        this.heartbeat = options.heartbeat || { outgoing: 0, incoming: 0 };
+	        this.heartbeat = heartbeat || { outgoing: 0, incoming: 0 };
 	        // maximum *WebSocket* frame size sent by the client. If the STOMP frame
 	        // is bigger than this value, the STOMP frame will be sent using multiple
 	        // WebSocket frames (default is 16KiB)
@@ -491,7 +499,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_wsSend',
 	        value: function _wsSend(data) {
-	            if (this.binary) data = (0, _utils.unicodeStringToTypedArray)(data);
+	            if (this.isBinary) data = (0, _utils.unicodeStringToTypedArray)(data);
 	            this.debug('>>> length ' + data.length);
 	            // if necessary, split the *STOMP* frame to send it on many smaller
 	            // *WebSocket* frames
@@ -628,11 +636,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	// [STOMP Frame](http://stomp.github.com/stomp-specification-1.1.html#STOMP_Frames) Class
-
 	var Frame = function () {
 
 	    // Frame constructor
-
 	    function Frame(command) {
 	        var headers = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 	        var body = arguments.length <= 2 || arguments[2] === undefined ? '' : arguments[2];
