@@ -62,7 +62,10 @@ class Client {
     // The errorCallback is optional and the 2 first forms allow to pass other
     // headers in addition to `client`, `passcode` and `host`.
     connect(...args) {
-        let [headers, connectCallback, errorCallback] = this._parseConnect(...args);
+        let parseConnect = this._parseConnect(...args);
+        let headers = parseConnect[0]; 
+        let connectCallback = parseConnect[1]; 
+        let errorCallback = parseConnect[2];
         this.connectCallback = connectCallback;
         this.debug('Opening Web Socket...');
         this.ws.onmessage = (evt) => {
@@ -332,7 +335,9 @@ class Client {
         // heart-beat header received from the server looks like:
         //
         //     heart-beat: sx, sy
-        const [serverOutgoing, serverIncoming] = (headers['heart-beat'] || '0,0').split(',').map(v => parseInt(v, 10));
+        const heartBeatHeaders = (headers['heart-beat'] || '0,0').split(',').map(v => parseInt(v, 10));
+        let serverOutgoing = heartBeatHeaders[0];
+        let serverIncoming = heartBeatHeaders[1];
 
         if (!(this.heartbeat.outgoing === 0 || serverIncoming === 0)) {
             let ttl = Math.max(this.heartbeat.outgoing, serverIncoming);
