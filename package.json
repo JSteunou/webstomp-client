@@ -16,6 +16,7 @@
     "*.txt"
   ],
   "main": "dist/webstomp.js",
+  "types": "index.d.ts",
   "es6": "src/webstomp.js",
   "repository": {
     "type": "git",
