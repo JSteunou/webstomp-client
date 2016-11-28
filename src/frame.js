@@ -46,7 +46,7 @@ class Frame {
 
         // Parse headers in reverse order so that for repeated headers, the 1st
         // value is used
-        for (let line of headerLines.reverse()) {
+        for (let line in headerLines.reverse()) {
             let idx = line.indexOf(':');
             headers[trim(line.substring(0, idx))] = trim(line.substring(idx + 1));
         }
