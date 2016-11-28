@@ -1,5 +1,5 @@
-import Frame from './frame';
-import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray} from './utils';
+import Frame from "./frame";
+import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray} from "./utils";
 
 // STOMP Client Class
 //
@@ -291,8 +291,6 @@ class Client {
         headers.id = id;
         this._transmit('UNSUBSCRIBE', headers);
     }
-
-
 
     // Clean up client resources when it is disconnected or the server did not
     // send heart beats in a timely fashion
