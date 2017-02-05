@@ -74,7 +74,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // This method creates a WebSocket client that is connected to
 	    // the STOMP server located at the url.
 	    client: function client(url) {
-	        var options = arguments.length <= 1 || arguments[1] === undefined ? { protocols: _utils.VERSIONS.supportedProtocols() } : arguments[1];
+	        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { protocols: _utils.VERSIONS.supportedProtocols() };
 
 	        var ws = new WebSocket(url, options.protocols);
 	        return new _client2.default(ws, options);
@@ -124,17 +124,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	// `send()`, etc.)
 	var Client = function () {
 	    function Client(ws) {
-	        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
 	        _classCallCheck(this, Client);
 
 	        // cannot have default options object + destructuring in the same time in method signature
-	        var _options$binary = options.binary;
-	        var binary = _options$binary === undefined ? false : _options$binary;
-	        var _options$heartbeat = options.heartbeat;
-	        var heartbeat = _options$heartbeat === undefined ? { outgoing: 10000, incoming: 10000 } : _options$heartbeat;
-	        var _options$debug = options.debug;
-	        var debug = _options$debug === undefined ? true : _options$debug;
+	        var _options$binary = options.binary,
+	            binary = _options$binary === undefined ? false : _options$binary,
+	            _options$heartbeat = options.heartbeat,
+	            heartbeat = _options$heartbeat === undefined ? { outgoing: 10000, incoming: 10000 } : _options$heartbeat,
+	            _options$debug = options.debug,
+	            debug = _options$debug === undefined ? true : _options$debug;
 
 
 	        this.ws = ws;
@@ -199,13 +199,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        value: function connect() {
 	            var _this = this;
 
-	            var _parseConnect2 = this._parseConnect.apply(this, arguments);
-
-	            var _parseConnect3 = _slicedToArray(_parseConnect2, 3);
-
-	            var headers = _parseConnect3[0];
-	            var connectCallback = _parseConnect3[1];
-	            var errorCallback = _parseConnect3[2];
+	            var _parseConnect2 = this._parseConnect.apply(this, arguments),
+	                _parseConnect3 = _slicedToArray(_parseConnect2, 3),
+	                headers = _parseConnect3[0],
+	                connectCallback = _parseConnect3[1],
+	                errorCallback = _parseConnect3[2];
 
 	            this.connectCallback = connectCallback;
 	            this.debug('Opening Web Socket...');
@@ -303,7 +301,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'disconnect',
 	        value: function disconnect(disconnectCallback) {
-	            var headers = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	            var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
 	            this._transmit('DISCONNECT', headers);
 	            // Discard the onclose callback to avoid calling the errorCallback when
@@ -322,8 +320,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'send',
 	        value: function send(destination) {
-	            var body = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
-	            var headers = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+	            var body = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+	            var headers = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
 	            headers.destination = destination;
 	            this._transmit('SEND', headers, body);
@@ -336,7 +334,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'begin',
 	        value: function begin() {
-	            var transaction = arguments.length <= 0 || arguments[0] === undefined ? 'tx-' + this.counter++ : arguments[0];
+	            var transaction = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'tx-' + this.counter++;
 
 	            this._transmit('BEGIN', { transaction: transaction });
 	            return {
@@ -399,7 +397,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'ack',
 	        value: function ack(messageID, subscription) {
-	            var headers = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+	            var headers = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
 	            // 1.2 change id header name from message-id to id
 	            var idAttr = this.version === _utils.VERSIONS.V1_2 ? 'id' : 'message-id';
@@ -427,7 +425,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'nack',
 	        value: function nack(messageID, subscription) {
-	            var headers = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+	            var headers = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
 	            // 1.2 change id header name from message-id to id
 	            var idAttr = this.version === _utils.VERSIONS.V1_2 ? 'id' : 'message-id';
@@ -441,7 +439,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'subscribe',
 	        value: function subscribe(destination, callback) {
-	            var headers = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+	            var headers = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
 	            // for convenience if the `id` header is not set, we create a new one for this client
 	            // that will be returned to be able to unsubscribe this subscription
@@ -469,7 +467,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'unsubscribe',
 	        value: function unsubscribe(id) {
-	            var headers = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	            var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
 	            delete this.subscriptions[id];
 	            headers.id = id;
@@ -529,13 +527,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            var _split$map = (headers['heart-beat'] || '0,0').split(',').map(function (v) {
 	                return parseInt(v, 10);
-	            });
-
-	            var _split$map2 = _slicedToArray(_split$map, 2);
-
-	            var serverOutgoing = _split$map2[0];
-	            var serverIncoming = _split$map2[1];
-
+	            }),
+	                _split$map2 = _slicedToArray(_split$map, 2),
+	                serverOutgoing = _split$map2[0],
+	                serverIncoming = _split$map2[1];
 
 	            if (!(this.heartbeat.outgoing === 0 || serverIncoming === 0)) {
 	                var ttl = Math.max(this.heartbeat.outgoing, serverIncoming);
@@ -640,8 +635,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // Frame constructor
 	    function Frame(command) {
-	        var headers = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-	        var body = arguments.length <= 2 || arguments[2] === undefined ? '' : arguments[2];
+	        var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+	        var body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
 
 	        _classCallCheck(this, Frame);
 
