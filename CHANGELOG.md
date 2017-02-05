@@ -1,3 +1,9 @@
+# 1.0.5 - 05 Feb. 2016
+
+* Add TS definitions file
+* Update all dependencies, especially webpack to 2.2
+
+
 # 1.0.4 - 04 Aug. 2016
 
 * Fixes default options value when an options object is already given with missing values
