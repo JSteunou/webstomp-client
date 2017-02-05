@@ -36,7 +36,7 @@
     "in-publish": "^2.0.0",
     "opn-cli": "^3.1.0",
     "webpack": "^1.12.14",
-    "ws": "^1.0.1"
+    "ws": "^2.0.0"
   },
   "scripts": {
     "test": "echo \"TODO: add tests\"",
