@@ -13,7 +13,8 @@
     "dist",
     "src",
     "*.md",
-    "*.txt"
+    "*.txt",
+    "index.d.ts"
   ],
   "main": "dist/webstomp.js",
   "types": "index.d.ts",
