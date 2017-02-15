@@ -1,3 +1,8 @@
+# 1.0.6 - 15 Feb. 2016
+
+* Fix missing TS definitions file in package.json
+
+
 # 1.0.5 - 05 Feb. 2016
 
 * Add TS definitions file
