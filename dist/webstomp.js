@@ -11,41 +11,41 @@
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
-
+/******/
 /******/ 		// Check if module is in cache
 /******/ 		if(installedModules[moduleId])
 /******/ 			return installedModules[moduleId].exports;
-
+/******/
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
 /******/ 			l: false,
 /******/ 			exports: {}
 /******/ 		};
-
+/******/
 /******/ 		// Execute the module function
 /******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
+/******/
 /******/ 		// Flag the module as loaded
 /******/ 		module.l = true;
-
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-
-
+/******/
+/******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
-
+/******/
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
-
+/******/
 /******/ 	// identity function for calling harmony imports with the correct context
 /******/ 	__webpack_require__.i = function(value) { return value; };
-
+/******/
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
@@ -56,7 +56,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 			});
 /******/ 		}
 /******/ 	};
-
+/******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
 /******/ 	__webpack_require__.n = function(module) {
 /******/ 		var getter = module && module.__esModule ?
@@ -65,13 +65,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 		__webpack_require__.d(getter, 'a', getter);
 /******/ 		return getter;
 /******/ 	};
-
+/******/
 /******/ 	// Object.prototype.hasOwnProperty.call
 /******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-
+/******/
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
-
+/******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = 348);
 /******/ })
@@ -6618,22 +6618,20 @@ var RxClient = function () {
         this._subscriptions = {};
         this.partialData = '';
 
-        this._messageSubject = new _rxjs.Subject();
-        this._receiptsSubject = new _rxjs.Subject();
+        this._messageIdCounter = 0;
+
+        this._frameSubject = new _rxjs.Subject();
     }
 
-    // Gets the recipt Observable to handle incoming reciepts
+    // [SUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#SUBSCRIBE)
+    // Destination is mandatory.
+    // Each call to this method generates a new subscription id, unless one is provided in the headers.
+    // There can be multiple subscribers to this observable, once all subscribers have unsubscribed the unsubscribe command is sent
+    // To the server.
 
 
     _createClass(RxClient, [{
         key: 'getObservableSubscription',
-
-
-        // [SUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#SUBSCRIBE)
-        // Destination is mandatory.
-        // Each call to this method generates a new subscription id, unless one is provided in the headers.
-        // There can be multiple subscribers to this observable, once all subscribers have unsubscribed the unsubscribe command is sent
-        // To the server.
         value: function getObservableSubscription(destination) {
             var _this = this;
 
@@ -6644,18 +6642,45 @@ var RxClient = function () {
             headers.destination = destination;
 
             return _rxjs.Observable.create(function (observer) {
-                if (!_this._subscriptions.hasOwnProperty(headers.id)) {
-                    _this._subscriptions[headers.id] = { id: headers.id, count: 0 };
-                    _this._transmit('SUBSCRIBE', headers);
-                }
 
-                _this._subscriptions[headers.id].count++;
-                var subscription = { id: headers.id, messages: _this._messageSubject.filter(function (frame) {
-                        return frame.headers.subscription === headers.id;
-                    }) };
-                observer.next(subscription);
+                var messageObservable = _this._frameSubject.filter(function (frame) {
+                    return frame.command === 'MESSAGE' && frame.headers.subscription === headers.id;
+                }).map(function (frame) {
+                    var subscription = frame.headers.subscription;
+                    // 1.2 define ack header if ack is set to client
+                    // and this header must be used for ack/nack
+                    var messageID = _this.version === _utils.VERSIONS.V1_2 && frame.headers.ack || frame.headers['message-id'];
+                    // add `ack()` and `nack()` methods directly to the returned frame
+                    // so that a simple call to `message.ack()` can acknowledge the message.
+                    frame.ack = _this.ack.bind(_this, messageID, subscription);
+                    frame.nack = _this.nack.bind(_this, messageID, subscription);
+
+                    return frame;
+                });
+
+                var subscription = { id: headers.id, messages: messageObservable };
+
+                if (!_this._subscriptions.hasOwnProperty(headers.id)) {
+                    var subscribeMessageId = _this._generateMessageId();
+                    headers.receipt = subscribeMessageId;
+
+                    _this._subscriptions[headers.id] = { id: headers.id, count: 0 };
+
+                    var transmissionSubscription = _this._transmit('SUBSCRIBE', headers).subscribe(function () {
+                        _this._subscriptions[headers.id].count++;
+                        observer.next(subscription);
+                        transmissionSubscription.unsubscribe();
+                    }, function (errorFrame) {
+                        observer.error(errorFrame);
+                    });
+                } else {
+                    _this._subscriptions[headers.id].count++;
+                    observer.next(subscription);
+                }
             }).finally(function () {
-                return _this._unsubscribe(headers.id);
+                var unsubscriptionSub = _this._unsubscribe(headers.id).subscribe(function () {
+                    unsubscriptionSub.unsubscribe();
+                });
             });
         }
 
@@ -6719,14 +6744,17 @@ var RxClient = function () {
     }, {
         key: 'disconnect',
         value: function disconnect() {
+            var _this3 = this;
+
             var headers = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-            this._transmit('DISCONNECT', headers);
-            // Discard the onclose callback to avoid calling the errorCallback when
-            // the client is properly disconnected.
-            this.ws.onclose = null;
-            this.ws.close();
-            this._cleanUp();
+            return this._transmit('DISCONNECT', headers).finally(function () {
+                // Discard the onclose callback to avoid calling the errorCallback when
+                // the client is properly disconnected.
+                _this3.ws.onclose = null;
+                _this3.ws.close();
+                _this3._cleanUp();
+            });
         }
 
         // [SEND Frame](http://stomp.github.com/stomp-specification-1.1.html#SEND)
@@ -6740,7 +6768,7 @@ var RxClient = function () {
             var headers = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
             headers.destination = destination;
-            this._transmit('SEND', headers, body);
+            return this._transmit('SEND', headers, body);
         }
 
         // [BEGIN Frame](http://stomp.github.com/stomp-specification-1.1.html#BEGIN)
@@ -6750,14 +6778,17 @@ var RxClient = function () {
     }, {
         key: 'begin',
         value: function begin() {
+            var _this4 = this;
+
             var transaction = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'tx-' + this.counter++;
 
-            this._transmit('BEGIN', { transaction: transaction });
-            return {
-                id: transaction,
-                commit: this.commit.bind(this, transaction),
-                abort: this.abort.bind(this, transaction)
-            };
+            return this._transmit('BEGIN', { transaction: transaction }).map(function () {
+                return {
+                    id: transaction,
+                    commit: _this4.commit.bind(_this4, transaction),
+                    abort: _this4.abort.bind(_this4, transaction)
+                };
+            });
         }
 
         // [COMMIT Frame](http://stomp.github.com/stomp-specification-1.1.html#COMMIT)
@@ -6774,7 +6805,7 @@ var RxClient = function () {
     }, {
         key: 'commit',
         value: function commit(transaction) {
-            this._transmit('COMMIT', { transaction: transaction });
+            return this._transmit('COMMIT', { transaction: transaction });
         }
 
         // [ABORT Frame](http://stomp.github.com/stomp-specification-1.1.html#ABORT)
@@ -6791,7 +6822,7 @@ var RxClient = function () {
     }, {
         key: 'abort',
         value: function abort(transaction) {
-            this._transmit('ABORT', { transaction: transaction });
+            return this._transmit('ABORT', { transaction: transaction });
         }
 
         // [ACK Frame](http://stomp.github.com/stomp-specification-1.1.html#ACK)
@@ -6819,7 +6850,7 @@ var RxClient = function () {
             var idAttr = this.version === _utils.VERSIONS.V1_2 ? 'id' : 'message-id';
             headers[idAttr] = messageID;
             headers.subscription = subscription;
-            this._transmit('ACK', headers);
+            return this._transmit('ACK', headers);
         }
 
         // [NACK Frame](http://stomp.github.com/stomp-specification-1.1.html#NACK)
@@ -6847,7 +6878,7 @@ var RxClient = function () {
             var idAttr = this.version === _utils.VERSIONS.V1_2 ? 'id' : 'message-id';
             headers[idAttr] = messageID;
             headers.subscription = subscription;
-            this._transmit('NACK', headers);
+            return this._transmit('NACK', headers);
         }
 
         // [UNSUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#UNSUBSCRIBE)
@@ -6872,7 +6903,7 @@ var RxClient = function () {
                 return;
             }
             delete this._subscriptions[headers.id];
-            this._transmit('UNSUBSCRIBE', headers);
+            return this._transmit('UNSUBSCRIBE', headers);
         }
 
         // Clean up client resources when it is disconnected or the server did not
@@ -6882,7 +6913,6 @@ var RxClient = function () {
         key: '_cleanUp',
         value: function _cleanUp() {
             this.connected = false;
-            this._recieptSubscription.unsubscribe();
             clearInterval(this.pinger);
             clearInterval(this.ponger);
         }
@@ -6892,9 +6922,32 @@ var RxClient = function () {
     }, {
         key: '_transmit',
         value: function _transmit(command, headers, body) {
-            var out = _frame2.default.marshall(command, headers, body);
-            this.debug('>>> ' + out);
-            this._wsSend(out);
+            var _this5 = this;
+
+            return _rxjs.Observable.create(function (observer) {
+                if (!headers.hasOwnProperty('receipt')) {
+                    headers.receipt = _this5._generateMessageId();
+                }
+
+                var frameSub = _this5._frameSubject.filter(function (frame) {
+                    return frame.command === 'RECEIPT' || command === 'CONNECT' || frame.command === 'ERROR' && frame.headers['receipt-id'] === headers.receipt;
+                }).map(function (frame) {
+                    if (frame.command === 'ERROR') {
+                        _rxjs.Observable.throw(frame);
+                    }
+                    return frame;
+                }).subscribe(function (frame) {
+                    observer.next(frame);
+                    observer.complete();
+                    frameSub.unsubscribe();
+                }, function (errorFrame) {
+                    observer.error(errorFrame);
+                });
+
+                var out = _frame2.default.marshall(command, headers, body);
+                _this5.debug('>>> ' + out);
+                _this5._wsSend(out);
+            });
         }
     }, {
         key: '_wsSend',
@@ -6919,7 +6972,7 @@ var RxClient = function () {
     }, {
         key: '_setupHeartbeat',
         value: function _setupHeartbeat(headers) {
-            var _this3 = this;
+            var _this6 = this;
 
             if (this.version !== _utils.VERSIONS.V1_1 && this.version !== _utils.VERSIONS.V1_2) return;
 
@@ -6938,8 +6991,8 @@ var RxClient = function () {
                 var ttl = Math.max(this.heartbeat.outgoing, serverIncoming);
                 this.debug('send PING every ' + ttl + 'ms');
                 this.pinger = setInterval(function () {
-                    _this3._wsSend(_utils.BYTES.LF);
-                    _this3.debug('>>> PING');
+                    _this6._wsSend(_utils.BYTES.LF);
+                    _this6.debug('>>> PING');
                 }, ttl);
             }
 
@@ -6947,11 +7000,11 @@ var RxClient = function () {
                 var _ttl = Math.max(this.heartbeat.incoming, serverOutgoing);
                 this.debug('check PONG every ' + _ttl + 'ms');
                 this.ponger = setInterval(function () {
-                    var delta = Date.now() - _this3.serverActivity;
+                    var delta = Date.now() - _this6.serverActivity;
                     // We wait twice the TTL to be flexible on window's setInterval calls
                     if (delta > _ttl * 2) {
-                        _this3.debug('did not receive server activity for the last ' + delta + 'ms');
-                        _this3.ws.close();
+                        _this6.debug('did not receive server activity for the last ' + delta + 'ms');
+                        _this6.ws.close();
                     }
                 }, _ttl);
             }
@@ -6996,102 +7049,72 @@ var RxClient = function () {
     }, {
         key: '_internalConnect',
         value: function _internalConnect(headers) {
-            var _this4 = this;
+            var _this7 = this;
 
             return _rxjs.Observable.create(function (observer) {
                 // Reconnect on new subscription
-                if (_this4.connected) {
-                    _this4.disconnect({ receipt: _this4.latestReceipt });
+                if (_this7.connected) {
+                    _this7.disconnect({ receipt: _this7.latestReceipt });
                 }
 
-                _this4.debug('Opening Web Socket...');
-                _this4.ws.onmessage = function (evt) {
+                _this7.debug('Opening Web Socket...');
+                _this7.ws.onmessage = function (evt) {
                     var data = evt.data;
                     if (evt.data instanceof ArrayBuffer) {
                         data = (0, _utils.typedArrayToUnicodeString)(new Uint8Array(evt.data));
                     }
-                    _this4.serverActivity = Date.now();
+                    _this7.serverActivity = Date.now();
                     // heartbeat
                     if (data === _utils.BYTES.LF) {
-                        _this4.debug('<<< PONG');
+                        _this7.debug('<<< PONG');
                         return;
                     }
-                    _this4.debug('<<< ' + data);
+                    _this7.debug('<<< ' + data);
 
                     // Handle STOMP frames received from the server
                     // The unmarshall function returns the frames parsed and any remaining
                     // data from partial frames.
 
-                    var unmarshalledData = _frame2.default.unmarshall(_this4.partialData + data);
-                    _this4.partialData = unmarshalledData.partial;
+                    var unmarshalledData = _frame2.default.unmarshall(_this7.partialData + data);
+                    _this7.partialData = unmarshalledData.partial;
 
                     unmarshalledData.frames.forEach(function (frame) {
-                        switch (frame.command) {
-                            // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
-                            case 'CONNECTED':
-                                _this4.debug('connected to server ' + frame.headers.server);
-                                _this4.connected = true;
-                                _this4.version = frame.headers.version;
-                                _this4._setupHeartbeat(frame.headers);
-                                observer.next(frame);
-                                break;
-                            // [MESSAGE Frame](http://stomp.github.com/stomp-specification-1.1.html#MESSAGE)
-                            case 'MESSAGE':
-
-                                var subscription = frame.headers.subscription;
-                                // 1.2 define ack header if ack is set to client
-                                // and this header must be used for ack/nack
-                                var messageID = _this4.version === _utils.VERSIONS.V1_2 && frame.headers.ack || frame.headers['message-id'];
-                                // add `ack()` and `nack()` methods directly to the returned frame
-                                // so that a simple call to `message.ack()` can acknowledge the message.
-                                frame.ack = _this4.ack.bind(_this4, messageID, subscription);
-                                frame.nack = _this4.nack.bind(_this4, messageID, subscription);
-
-                                _this4._messageSubject.next(frame);
-
-                                break;
-                            // [RECEIPT Frame](http://stomp.github.com/stomp-specification-1.1.html#RECEIPT)
-                            //
-                            // The client instance can subscribe to the `receipts` field to a function taking
-                            // a frame argument that will be called when a receipt is received from
-                            // the server:
-                            //
-                            //     client.reciepts.subscribe(function(frame) {
-                            //       receiptID = frame.headers['receipt-id'];
-                            //       ...
-                            //     });
-                            case 'RECEIPT':
-                                _this4._receiptsSubject.next(frame);
-                                break;
-                            // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
-                            case 'ERROR':
-                                observer.error(frame);
-                                break;
-                            default:
-                                _this4.debug('Unhandled frame: ' + frame);
-                        }
+                        _this7._frameSubject.next(frame);
                     });
                 };
-                _this4.ws.onclose = function (ev) {
-                    _this4.debug('Whoops! Lost connection to ' + _this4.ws.url + ':', ev);
-                    _this4._cleanUp();
+                _this7.ws.onclose = function (ev) {
+                    _this7.debug('Whoops! Lost connection to ' + _this7.ws.url + ':', ev);
+                    _this7._cleanUp();
                     observer.error(ev);
                 };
-                _this4.ws.onopen = function () {
-                    _this4.debug('Web Socket Opened...');
+                _this7.ws.onopen = function () {
+                    _this7.debug('Web Socket Opened...');
                     headers['accept-version'] = _utils.VERSIONS.supportedVersions();
                     // Check if we already have heart-beat in headers before adding them
                     if (!headers['heart-beat']) {
-                        headers['heart-beat'] = [_this4.heartbeat.outgoing, _this4.heartbeat.incoming].join(',');
+                        headers['heart-beat'] = [_this7.heartbeat.outgoing, _this7.heartbeat.incoming].join(',');
                     }
-                    _this4._transmit('CONNECT', headers);
+                    var connectionSubscription = _this7._transmit('CONNECT', headers).subscribe(function (frame) {
+
+                        _this7.debug('connected to server ' + frame.headers.server);
+                        _this7.connected = true;
+                        _this7.version = frame.headers.version;
+                        _this7._setupHeartbeat(frame.headers);
+
+                        observer.next(frame);
+
+                        connectionSubscription.unsubscribe();
+                    }, function (errorFrame) {
+                        observer.error(errorFrame);
+                    });
                 };
             });
         }
     }, {
-        key: 'receipts',
-        get: function get() {
-            return this._receiptsSubject;
+        key: '_generateMessageId',
+        value: function _generateMessageId() {
+            var messageIdPrefix = 'webstomp-rxclient-messageid';
+            return messageIdPrefix + this._messageIdCounter++;
         }
     }]);
 
@@ -21648,7 +21671,7 @@ var webstomp = {
         return new _client2.default(ws, options);
     },
 
-    // This method creates a Websocket client that is connected to the STOMP server 
+    // This method creates a Websocket client that is connected to the STOMP server
     rxClient: function rxClient(url) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { protocols: _utils.VERSIONS.supportedProtocols() };
 
@@ -21681,3 +21704,4 @@ module.exports = exports['default'];
 /***/ })
 /******/ ]);
 });
+//# sourceMappingURL=webstomp.map

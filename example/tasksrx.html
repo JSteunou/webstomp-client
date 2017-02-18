@@ -57,13 +57,11 @@
                 var client = webstomp.rxClient(url);
                 clients.slaves.push(client);
                 client.connect(login, password).subscribe(function() {
-                    var observableSub = client.getObservableSubscription('webstomp-tasks-example').subscribe(function(subscription){
-                        subscription.messages.subscribe(onMessage.bind(this, lines-1))
-                    });
+                    var observableSub = client.getObservableSubscription('webstomp-tasks-example').switchMap(function(sub){return sub.messages}).subscribe(onMessage.bind(this, lines-1), (error) => console.log(error));
                 });
             }
             function onPush() {
-                clients.master.send('webstomp-tasks-example', ++tasks);
+                clients.master.send('webstomp-tasks-example', ++tasks).subscribe(() => console.log("Sent!"));
             }
             function onError(err) {
                 toggleButtons(false);

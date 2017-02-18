@@ -11,7 +11,7 @@ const webstomp = {
         return new Client(ws, options);
     },
 
-    // This method creates a Websocket client that is connected to the STOMP server 
+    // This method creates a Websocket client that is connected to the STOMP server
     rxClient: function(url, options = {protocols: VERSIONS.supportedProtocols()}) {
         let ws = new WebSocket(url, options.protocols);
         return new RxClient(ws, options);
@@ -21,7 +21,7 @@ const webstomp = {
     // a similar object).
     over: (...args) => new Client(...args),
 
-    overRx : (...args) => new RxClient(...args)
+    overRx: (...args) => new RxClient(...args)
 };
 
 export default webstomp;

@@ -42,21 +42,21 @@ export class RxClient{
   connect(headers : ConnectionHeaders) : Observable<Frame>;
   connect(login: string, passcode: string, host?: string): Observable<Frame>;
 
-  disconnect(headers?: DisconnectHeaders): void;
+  disconnect(headers?: DisconnectHeaders): Observable<Frame>;
 
-  send(destination: string, body?: string, headers?: ExtendedHeaders): void;
+  send(destination: string, body?: string, headers?: ExtendedHeaders): Observable<Frame>;
 
   getObservableSubscription(destination: string, headers?: SubscribeHeaders): Observable<RxSubscription>;
 
-  begin(transaction: string): void;
+  begin(transaction: string): Observable<RxTransaction>;
 
-  commit(transaction: string): void;
+  commit(transaction: string): Observable<Frame>;
 
-  abort(transaction: string): void;
+  abort(transaction: string): Observable<Frame>;
 
-  ack(messageID: string, subscription: Subscription, headers?: AckHeaders): void;
+  ack(messageID: string, subscription: Subscription, headers?: AckHeaders): Observable<Frame>;
 
-  nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
+  nack(messageID: string, subscription: Subscription, headers?: NackHeaders): Observable<Frame>;
 
 }
 
@@ -87,6 +87,12 @@ export interface Heartbeat {
 export interface RxSubscription{
   id : string;
   messages : Observable<Message>;
+}
+
+export interface RxTransaction{
+  id : string;
+  commit() : Observable<Frame>;
+  abort() : Observable<Frame>;
 }
 
 export interface Subscription {

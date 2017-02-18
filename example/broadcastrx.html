@@ -154,7 +154,7 @@
                     author: names[client],
                     text: msg
                 });
-                clients[client].send('/topic/webstomp-chat-example', msg);
+                clients[client].send('/topic/webstomp-chat-example', msg).subscribe(function(){});
                 input.value = '';
             }
 

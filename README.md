@@ -218,7 +218,8 @@ Not all server are compatible, you may have to deactivate this feature depending
 
 The `RxClient` uses the reactiveX library, [RxJs](http://reactivex.io/), to include observable support.
 
-Connecting and Subscribing, unsubscribing is a bit different. The rest of the API is the same as `Client`
+The API is completely async with observables ergo requiring a subscription to be active before 
+sending.
 
 #### connect
 
@@ -255,18 +256,10 @@ var subscription = client.getObservableSubscription('testqueue').switchMap((subs
 subscription.unsubscribe();
 ```
 
-#### get receipts() : Observable<Frame>
-
-Subscribe to this to handle incoming receipts
+#### send(destination: string, body?: string, headers?: ExtendedHeaders) : Observable<Frame>
 
 ```js
-
-// Subscribing
-var subscription = client.receipts.subscribe((receipt) => console.log(receipt));
-
-// Unsubscribing
-
-subscription.unsubscribe();
+client.send('queuenamehere', 'Hello world').subscribe(() => console.log('sent'), () => console.log('error'));
 ```
 
 ## Authors

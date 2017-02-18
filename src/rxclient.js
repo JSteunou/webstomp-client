@@ -31,16 +31,10 @@ class RxClient {
         this._subscriptions = {};
         this.partialData = '';
 
-        this._messageSubject = new Subject();
-        this._receiptsSubject = new Subject();
+        this._messageIdCounter = 0;
+
+        this._frameSubject = new Subject();
     }
-
-
-    // Gets the recipt Observable to handle incoming reciepts
-    get receipts() {
-        return this._receiptsSubject;
-    }
-
 
      // [SUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#SUBSCRIBE)
      // Destination is mandatory.
@@ -53,16 +47,52 @@ class RxClient {
         headers.destination = destination;
 
         return Observable.create((observer) => {
+
+
+            let messageObservable = this._frameSubject.filter((frame) => frame.command === 'MESSAGE' && frame.headers.subscription === headers.id)
+            .map(frame => {
+                const subscription = frame.headers.subscription;
+                // 1.2 define ack header if ack is set to client
+                // and this header must be used for ack/nack
+                const messageID = this.version === VERSIONS.V1_2 &&
+                    frame.headers.ack ||
+                    frame.headers['message-id'];
+                // add `ack()` and `nack()` methods directly to the returned frame
+                // so that a simple call to `message.ack()` can acknowledge the message.
+                frame.ack = this.ack.bind(this, messageID, subscription);
+                frame.nack = this.nack.bind(this, messageID, subscription);
+
+                return frame;
+            });
+
+            let subscription = {id: headers.id, messages: messageObservable};
+
             if (!this._subscriptions.hasOwnProperty(headers.id)) {
+                let subscribeMessageId = this._generateMessageId();
+                headers.receipt = subscribeMessageId;
+
                 this._subscriptions[headers.id] =  {id: headers.id, count: 0};
-                this._transmit('SUBSCRIBE', headers);
+
+                let transmissionSubscription = this._transmit('SUBSCRIBE', headers).subscribe(() => {
+                    this._subscriptions[headers.id].count++;
+                    observer.next(subscription);
+                    transmissionSubscription.unsubscribe();
+                },
+                (errorFrame) => {
+                    observer.error(errorFrame);
+                });
+
+            }            else {
+                this._subscriptions[headers.id].count++;
+                observer.next(subscription);
             }
 
-            this._subscriptions[headers.id].count++;
-            let subscription = {id : headers.id, messages : this._messageSubject.filter(frame => frame.headers.subscription === headers.id)};
-            observer.next(subscription);
 
-        }).finally(() => this._unsubscribe(headers.id));
+        }).finally(() => {
+            let unsubscriptionSub = this._unsubscribe(headers.id).subscribe(() => {
+                unsubscriptionSub.unsubscribe();
+            });
+        });
     }
 
 
@@ -113,12 +143,13 @@ class RxClient {
 
     // [DISCONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#DISCONNECT)
     disconnect(headers = {}) {
-        this._transmit('DISCONNECT', headers);
-        // Discard the onclose callback to avoid calling the errorCallback when
-        // the client is properly disconnected.
-        this.ws.onclose = null;
-        this.ws.close();
-        this._cleanUp();
+        return this._transmit('DISCONNECT', headers).finally(() => {
+            // Discard the onclose callback to avoid calling the errorCallback when
+            // the client is properly disconnected.
+            this.ws.onclose = null;
+            this.ws.close();
+            this._cleanUp();
+        });
     }
 
     // [SEND Frame](http://stomp.github.com/stomp-specification-1.1.html#SEND)
@@ -126,19 +157,20 @@ class RxClient {
     // * `destination` is MANDATORY.
     send(destination, body = '', headers = {}) {
         headers.destination = destination;
-        this._transmit('SEND', headers, body);
+        return this._transmit('SEND', headers, body);
     }
 
     // [BEGIN Frame](http://stomp.github.com/stomp-specification-1.1.html#BEGIN)
     //
     // If no transaction ID is passed, one will be created automatically
     begin(transaction = `tx-${this.counter++}`) {
-        this._transmit('BEGIN', {transaction});
-        return {
-            id: transaction,
-            commit: this.commit.bind(this, transaction),
-            abort: this.abort.bind(this, transaction)
-        };
+        return this._transmit('BEGIN', {transaction}).map(() => {
+            return {
+                id: transaction,
+                commit: this.commit.bind(this, transaction),
+                abort: this.abort.bind(this, transaction)
+            };
+        });
     }
 
     // [COMMIT Frame](http://stomp.github.com/stomp-specification-1.1.html#COMMIT)
@@ -152,7 +184,7 @@ class RxClient {
     //     ...
     //     tx.commit();
     commit(transaction) {
-        this._transmit('COMMIT', {transaction});
+        return this._transmit('COMMIT', {transaction});
     }
 
     // [ABORT Frame](http://stomp.github.com/stomp-specification-1.1.html#ABORT)
@@ -166,7 +198,7 @@ class RxClient {
     //     ...
     //     tx.abort();
     abort(transaction) {
-        this._transmit('ABORT', {transaction});
+        return this._transmit('ABORT', {transaction});
     }
 
     // [ACK Frame](http://stomp.github.com/stomp-specification-1.1.html#ACK)
@@ -189,7 +221,7 @@ class RxClient {
         var idAttr = this.version === VERSIONS.V1_2 ? 'id' : 'message-id';
         headers[idAttr] = messageID;
         headers.subscription = subscription;
-        this._transmit('ACK', headers);
+        return this._transmit('ACK', headers);
     }
 
     // [NACK Frame](http://stomp.github.com/stomp-specification-1.1.html#NACK)
@@ -212,7 +244,7 @@ class RxClient {
         var idAttr = this.version === VERSIONS.V1_2 ? 'id' : 'message-id';
         headers[idAttr] = messageID;
         headers.subscription = subscription;
-        this._transmit('NACK', headers);
+        return this._transmit('NACK', headers);
     }
 
 
@@ -234,7 +266,7 @@ class RxClient {
             return;
         }
         delete this._subscriptions[headers.id];
-        this._transmit('UNSUBSCRIBE', headers);
+        return this._transmit('UNSUBSCRIBE', headers);
     }
 
 
@@ -242,16 +274,38 @@ class RxClient {
     // send heart beats in a timely fashion
     _cleanUp() {
         this.connected = false;
-        this._recieptSubscription.unsubscribe();
         clearInterval(this.pinger);
         clearInterval(this.ponger);
     }
 
     // Base method to transmit any stomp frame
     _transmit(command, headers, body) {
-        let out = Frame.marshall(command, headers, body);
-        this.debug(`>>> ${out}`);
-        this._wsSend(out);
+
+        return Observable.create((observer) => {
+            if (!headers.hasOwnProperty('receipt')) {
+                headers.receipt = this._generateMessageId();
+            }
+
+            let frameSub = this._frameSubject.filter((frame) => frame.command === 'RECEIPT' || command === 'CONNECT' || (frame.command === 'ERROR' && frame.headers['receipt-id'] === headers.receipt))
+            .map((frame) => {
+                if (frame.command === 'ERROR') {
+                    Observable.throw(frame);
+                }
+                return frame;
+            }).subscribe((frame) => {
+                observer.next(frame);
+                observer.complete();
+                frameSub.unsubscribe();
+            },
+            (errorFrame) => {
+                observer.error(errorFrame);
+            });
+
+            let out = Frame.marshall(command, headers, body);
+            this.debug(`>>> ${out}`);
+            this._wsSend(out);
+        })
+
     }
 
     _wsSend(data) {
@@ -323,6 +377,7 @@ class RxClient {
     }
 
     _internalConnect(headers) {
+
         return Observable.create((observer) => {
             // Reconnect on new subscription
             if (this.connected) {
@@ -351,52 +406,7 @@ class RxClient {
                 this.partialData = unmarshalledData.partial;
 
                 unmarshalledData.frames.forEach(frame => {
-                    switch (frame.command) {
-                        // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
-                        case 'CONNECTED':
-                            this.debug(`connected to server ${frame.headers.server}`);
-                            this.connected = true;
-                            this.version = frame.headers.version;
-                            this._setupHeartbeat(frame.headers);
-                            observer.next(frame);
-                            break;
-                        // [MESSAGE Frame](http://stomp.github.com/stomp-specification-1.1.html#MESSAGE)
-                        case 'MESSAGE':
-
-                            const subscription = frame.headers.subscription;
-                                // 1.2 define ack header if ack is set to client
-                                // and this header must be used for ack/nack
-                            const messageID = this.version === VERSIONS.V1_2 &&
-                                frame.headers.ack ||
-                                frame.headers['message-id'];
-                            // add `ack()` and `nack()` methods directly to the returned frame
-                            // so that a simple call to `message.ack()` can acknowledge the message.
-                            frame.ack = this.ack.bind(this, messageID, subscription);
-                            frame.nack = this.nack.bind(this, messageID, subscription);
-
-                            this._messageSubject.next(frame);
-
-                            break;
-                        // [RECEIPT Frame](http://stomp.github.com/stomp-specification-1.1.html#RECEIPT)
-                        //
-                        // The client instance can subscribe to the `receipts` field to a function taking
-                        // a frame argument that will be called when a receipt is received from
-                        // the server:
-                        //
-                        //     client.reciepts.subscribe(function(frame) {
-                        //       receiptID = frame.headers['receipt-id'];
-                        //       ...
-                        //     });
-                        case 'RECEIPT':
-                            this._receiptsSubject.next(frame);
-                            break;
-                        // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
-                        case 'ERROR':
-                            observer.error(frame);
-                            break;
-                        default:
-                            this.debug(`Unhandled frame: ${frame}`);
-                    }
+                    this._frameSubject.next(frame);
                 });
             };
             this.ws.onclose = (ev) => {
@@ -411,9 +421,28 @@ class RxClient {
                 if (!headers['heart-beat']) {
                     headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
                 }
-                this._transmit('CONNECT', headers);
+                let connectionSubscription = this._transmit('CONNECT', headers).subscribe((frame) => {
+
+                    this.debug(`connected to server ${frame.headers.server}`);
+                    this.connected = true;
+                    this.version = frame.headers.version;
+                    this._setupHeartbeat(frame.headers);
+
+                    observer.next(frame);
+
+                    connectionSubscription.unsubscribe();
+                },
+                (errorFrame) => {
+                    observer.error(errorFrame);
+                })
             };
         });
+    }
+
+
+    _generateMessageId() {
+        const messageIdPrefix = 'webstomp-rxclient-messageid';
+        return messageIdPrefix + this._messageIdCounter++;
     }
 }
 
