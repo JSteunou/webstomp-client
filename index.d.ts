@@ -36,6 +36,9 @@ declare module 'webstomp'{
   }
 
   export class RxClient{
+
+    get receipts() : Observable<Frame>;
+
     connect(headers : ConnectionHeaders) : Observable<Frame>;
     connect(login: string, passcode: string, host?: string): Observable<Frame>;
 
