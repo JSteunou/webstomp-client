@@ -68,8 +68,6 @@ class RxClient {
             let subscription = {id: headers.id, messages: messageObservable};
 
             if (!this._subscriptions.hasOwnProperty(headers.id)) {
-                let subscribeMessageId = this._generateMessageId();
-                headers.receipt = subscribeMessageId;
 
                 this._subscriptions[headers.id] =  {id: headers.id, count: 0};
 
