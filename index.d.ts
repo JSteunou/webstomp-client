@@ -1,123 +1,153 @@
 // Type definitions for webstomp-client v1.0.x
 // Project: https://github.com/JSteunou/webstomp-client
 // Definitions by: Jimi Charalampidis <https://github.com/JimiC>
+declare module 'webstomp'{
+  import {Observable} from 'rxjs';
 
-export function client(url: string, options?: Options): Client;
+  export function client(url: string, options?: Options): Client;
 
-export function over(socketType: any, options?: Options): Client;
+  export function rxClient(url : string, options? : Options) : RxClient;
 
-export class Client {
+  export function over(socketType: any, options?: Options): Client;
+  export function overRx(socketType: any, options?: Options): RxClient;
 
-  connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: string) => any): void;
-  connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: string) => any, host?: string): void;
+  export class Client {
 
-  disconnect(disconnectCallback: () => any, headers?: DisconnectHeaders): void;
+    connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: string) => any): void;
+    connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: string) => any, host?: string): void;
 
-  send(destination: string, body?: string, headers?: ExtendedHeaders): void;
+    disconnect(disconnectCallback: () => any, headers?: DisconnectHeaders): void;
 
-  subscribe(destination: string, callback?: (message: Message) => any, headers?: SubscribeHeaders): Subscription;
+    send(destination: string, body?: string, headers?: ExtendedHeaders): void;
 
-  unsubscribe(id: string, header?: UnsubscribeHeaders): void;
+    subscribe(destination: string, callback?: (message: Message) => any, headers?: SubscribeHeaders): Subscription;
 
-  begin(transaction: string): void;
+    unsubscribe(id: string, header?: UnsubscribeHeaders): void;
 
-  commit(transaction: string): void;
+    begin(transaction: string): void;
 
-  abort(transaction: string): void;
+    commit(transaction: string): void;
 
-  ack(messageID: string, subscription: Subscription, headers?: AckHeaders): void;
+    abort(transaction: string): void;
 
-  nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
-}
+    ack(messageID: string, subscription: Subscription, headers?: AckHeaders): void;
 
-export class Frame {
-  constructor(command: string, headers?: {}, body?: string);
+    nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
+  }
 
-  toString(): string;
-  sizeOfUTF8(s: string): number;
-  unmarshall(datas: any): any;
-  marshall(command: string, headers?: {}, body?: string): any;
-}
+  export class RxClient{
+    connect(headers : ConnectionHeaders) : Observable<Frame>;
+    connect(login: string, passcode: string, host?: string): Observable<Frame>;
 
-export const VERSIONS: {
-  V1_0: string,
-  V1_1: string,
-  V1_2: string,
-  // Versions of STOMP specifications supported
-  supportedVersions: () => string,
-  supportedProtocols: () => Array<string>
-}
+    disconnect(headers?: DisconnectHeaders): void;
 
-export interface Heartbeat {
-  outgoing: number,
-  incoming: number
-}
+    send(destination: string, body?: string, headers?: ExtendedHeaders): void;
 
-export interface Subscription {
-  id: string;
-  unsubscribe: () => void;
-}
+    getObservableSubscription(destination: string, headers?: SubscribeHeaders): Observable<Message>;
 
-export interface Message {
-  command: string;
-  body: string;
-  headers: ExtendedHeaders,
-  ack(headers?: AckHeaders): any;
-  nack(headers?: NackHeaders): any;
-}
+    begin(transaction: string): void;
 
-export interface Options extends ClientOptions {
-  protocols: Array<string>;
-}
+    commit(transaction: string): void;
 
-export interface ClientOptions {
-  binary: boolean;
-  heartbeat: Heartbeat | boolean;
-  debug: boolean;
-}
+    abort(transaction: string): void;
 
-export interface ConnectionHeaders {
-  login: string;
-  passcode: string;
-  host?: string;
-}
+    ack(messageID: string, subscription: Subscription, headers?: AckHeaders): void;
 
-export interface DisconnectHeaders {
-  'receipt'?: string;
-}
+    nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
 
-export interface StandardHeaders extends DisconnectHeaders {
-  'content-length'?: string;
-  'content-type'?: string;
-}
+  }
 
-export interface ExtendedHeaders extends StandardHeaders {
-  'amqp-message-id'?: string,
-  'app-id'?: string,
-  'content-encoding'?: string,
-  'correlation-id'?: string,
-  custom?: string,
-  destination?: string,
-  'message-id'?: string,
-  persistent?: string,
-  redelivered?: string,
-  'reply-to'?: string,
-  subscription?: string,
-  timestamp?: string,
-  type?: string,
-}
 
-export interface UnsubscribeHeaders extends StandardHeaders {
-  id?: string,
-}
+  export class Frame {
+    constructor(command: string, headers?: {}, body?: string);
 
-export interface SubscribeHeaders extends UnsubscribeHeaders {
-  ack?: string
-}
+    toString(): string;
+    sizeOfUTF8(s: string): number;
+    unmarshall(datas: any): any;
+    marshall(command: string, headers?: {}, body?: string): any;
+  }
 
-export interface AckHeaders extends UnsubscribeHeaders {
-  transaction?: string
-}
+  export const VERSIONS: {
+    V1_0: string,
+    V1_1: string,
+    V1_2: string,
+    // Versions of STOMP specifications supported
+    supportedVersions: () => string,
+    supportedProtocols: () => Array<string>
+  }
 
-export interface NackHeaders extends AckHeaders {
+  export interface Heartbeat {
+    outgoing: number,
+    incoming: number
+  }
+
+  export interface Subscription {
+    id: string;
+    unsubscribe: () => void;
+  }
+
+  export interface Message {
+    command: string;
+    body: string;
+    headers: ExtendedHeaders,
+    ack(headers?: AckHeaders): any;
+    nack(headers?: NackHeaders): any;
+  }
+
+  export interface Options extends ClientOptions {
+    protocols: Array<string>;
+  }
+
+  export interface ClientOptions {
+    binary: boolean;
+    heartbeat: Heartbeat | boolean;
+    debug: boolean;
+  }
+
+  export interface ConnectionHeaders {
+    login: string;
+    passcode: string;
+    host?: string;
+  }
+
+  export interface DisconnectHeaders {
+    'receipt'?: string;
+  }
+
+  export interface StandardHeaders extends DisconnectHeaders {
+    'content-length'?: string;
+    'content-type'?: string;
+  }
+
+  export interface ExtendedHeaders extends StandardHeaders {
+    'amqp-message-id'?: string,
+    'app-id'?: string,
+    'content-encoding'?: string,
+    'correlation-id'?: string,
+    custom?: string,
+    destination?: string,
+    'message-id'?: string,
+    persistent?: string,
+    redelivered?: string,
+    'reply-to'?: string,
+    subscription?: string,
+    timestamp?: string,
+    type?: string,
+  }
+
+  export interface UnsubscribeHeaders extends StandardHeaders {
+    id?: string,
+  }
+
+  export interface SubscribeHeaders extends UnsubscribeHeaders {
+    ack?: string
+  }
+
+  export interface AckHeaders extends UnsubscribeHeaders {
+    transaction?: string
+  }
+
+  export interface NackHeaders extends AckHeaders {
+  }
+
 }
