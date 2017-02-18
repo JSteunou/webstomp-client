@@ -59,9 +59,10 @@ class RxClient {
             }
 
             this._subscriptions[headers.id].count++;
-            observer.next();
+            let subscription = {id : headers.id, messages : this._messageSubject.filter(frame => frame.headers.subscription === headers.id)};
+            observer.next(subscription);
 
-        }).switchMap(() => this._messageSubject).filter(frame => frame.headers.subscription === headers.id).finally(() => this._unsubscribe(headers.id));
+        }).finally(() => this._unsubscribe(headers.id));
     }
 
 

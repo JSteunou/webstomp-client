@@ -6650,11 +6650,10 @@ var RxClient = function () {
                 }
 
                 _this._subscriptions[headers.id].count++;
-                observer.next();
-            }).switchMap(function () {
-                return _this._messageSubject;
-            }).filter(function (frame) {
-                return frame.headers.subscription === headers.id;
+                var subscription = { id: headers.id, messages: _this._messageSubject.filter(function (frame) {
+                        return frame.headers.subscription === headers.id;
+                    }) };
+                observer.next(subscription);
             }).finally(function () {
                 return _this._unsubscribe(headers.id);
             });
@@ -21649,6 +21648,7 @@ var webstomp = {
         return new _client2.default(ws, options);
     },
 
+    // This method creates a Websocket client that is connected to the STOMP server 
     rxClient: function rxClient(url) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { protocols: _utils.VERSIONS.supportedProtocols() };
 
@@ -21664,6 +21664,14 @@ var webstomp = {
         }
 
         return new (Function.prototype.bind.apply(_client2.default, [null].concat(args)))();
+    },
+
+    overRx: function overRx() {
+        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            args[_key2] = arguments[_key2];
+        }
+
+        return new (Function.prototype.bind.apply(_rxclient2.default, [null].concat(args)))();
     }
 };
 

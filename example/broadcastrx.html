@@ -123,7 +123,9 @@
                 var el = roomEl.querySelector('.m-room-header p span');
                 el.innerHTML = 'connected.';
                 addEntry(client, 'Welcome~~~');
-                clients[client].getObservableSubscription('/topic/webstomp-chat-example').subscribe(onMessage.bind(this, client));
+                clients[client].getObservableSubscription('/topic/webstomp-chat-example').subscribe(function(subscription){
+                    subscription.messages.subscribe(onMessage.bind(this, client));
+                });
                 var form = roomEl.querySelector('form');
                 if (!form.sendCallback) form.sendCallback = onSend.bind(this, client);
                 form.addEventListener('submit', function(ev) {

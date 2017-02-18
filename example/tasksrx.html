@@ -57,8 +57,9 @@
                 var client = webstomp.rxClient(url);
                 clients.slaves.push(client);
                 client.connect(login, password).subscribe(function() {
-                    var observableSub = client.subscription('webstomp-tasks-example');
-                    observableSub.subscribe(onMessage.bind(this, lines-1));
+                    var observableSub = client.getObservableSubscription('webstomp-tasks-example').subscribe(function(subscription){
+                        subscription.messages.subscribe(onMessage.bind(this, lines-1))
+                    });
                 });
             }
             function onPush() {

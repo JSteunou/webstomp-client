@@ -235,7 +235,7 @@ var connectionSubscription = client.connect(guest, guest).subscribe((connectionF
 connectionSubscription.unsubscribe();
 ```
 
-#### getObservableSubscription(destination, headers = {}) : Observable<Message>
+#### getObservableSubscription(destination, headers = {}) : Observable<RxSubscription>
 
 Use this to set up new subscriptions, each call to the method sets up a new subscription
 You can have several subscriptions to the same observable subscription. 
@@ -246,7 +246,9 @@ To unsubscribe: Unsubscribe from the observable.
 ```js
 
 // Subscribing
-var subscription = client.getObservableSubscription('testqueue').subscribe((message) => console.log(message));
+var subscription = client.getObservableSubscription('testqueue').subscribe((subscription) => subscription.messages.subscribe(function(message){console.log(message)}));
+// Or 
+var subscription = client.getObservableSubscription('testqueue').switchMap((subscription) => subscription.messages).subscribe((message) => console.log(message));
 
 // Unsubscribing
 
