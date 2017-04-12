@@ -1,0 +1,22 @@
+{
+  "name": "webstomp-client",
+  "description": "Stomp client over websocket for browsers and nodejs",
+  "main": "dist/webstomp.js",
+  "authors": [
+    "Jérôme Steunou"
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "stomp",
+    "webstomp",
+    "websocket"
+  ],
+  "homepage": "https://github.com/elmarquez/webstomp-client",
+  "ignore": [
+    "index.d.ts",
+    "example",
+    "src",
+    "webpack.config.js",
+    "webpack.min.config.js"
+  ]
+}
