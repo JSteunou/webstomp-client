@@ -77,6 +77,26 @@ Takes a `WebSocket` alike object **instance** to return a webstomp `Client` obje
 * you do not want `webstomp.client` to create a default instance for you.
 * you are in an old browser or nodejs and do not have a global `WebSocket` object that `webstomp.client` can use.
 
+
+#### rxClient(url, [options])
+Uses global `WebSocket` object for you to return a webstomp `RxClient` object.
+
+##### ws<WebSocket>
+
+`WebSocket` object instance
+
+##### options<Object>
+
+* binary: default to `false`. See [binary](#binary) section.
+* heartbeat: default to `{incoming: 10000, outgoing: 10000}`. You can provide `false` to cut it (recommended when the server is a SockJS server) or a definition object.
+* debug: default to `true`. Will log frame using `console.log`
+
+#### overRx(ws, [options])
+
+Takes a `WebSocket` alike object **instance** to return a webstomp `RxClient` object. Allows you to use another `WebSocket` object than the default one. 2 cases for this:
+* you do not want `webstomp.rxClient` to create a default instance for you.
+* you are in an old browser or nodejs and do not have a global `WebSocket` object that `webstomp.rxClient` can use.
+
 ##### ws<WebSocket>
 
 `WebSocket` object instance
@@ -192,6 +212,55 @@ It is possible to use binary frame instead of string frame over Web Sockets.
 ## Hearbeat
 
 Not all server are compatible, you may have to deactivate this feature depending the server you are using. For example RabbitMQ Web-Stomp is compatible only since 3.6 with native Web Sockets server.
+
+
+### RxClient
+
+The `RxClient` uses the reactiveX library, [RxJs](http://reactivex.io/), to include observable support.
+
+The API is completely async with observables ergo requiring a subscription to be active before 
+sending.
+
+#### connect
+
+* `connect(headers) : Observable<Frame>`
+* `connect(login, passcode) : Observable<Frame>`
+* `connect(login, passcode, host) : Observable<Frame>`
+
+Returns an observable. Subscribing to the observable connects the client to the server. Unsubscribing disconnects.
+
+```js
+// connecting
+var connectionSubscription = client.connect(guest, guest).subscribe((connectionFrame) => {console.log('connected', connectionFrame), (error) => console.log('something went wrong', error)};
+
+connectionSubscription.unsubscribe();
+```
+
+#### getObservableSubscription(destination, headers = {}) : Observable<RxSubscription>
+
+Use this to set up new subscriptions, each call to the method sets up a new subscription
+You can have several subscriptions to the same observable subscription. 
+
+To unsubscribe: Unsubscribe from the observable.
+*Note:* the subscription will not be removed from the server until all Subscribers have unsubscribed from the observable.
+
+```js
+
+// Subscribing
+var subscription = client.getObservableSubscription('testqueue').subscribe((subscription) => subscription.messages.subscribe(function(message){console.log(message)}));
+// Or 
+var subscription = client.getObservableSubscription('testqueue').switchMap((subscription) => subscription.messages).subscribe((message) => console.log(message));
+
+// Unsubscribing
+
+subscription.unsubscribe();
+```
+
+#### send(destination: string, body?: string, headers?: ExtendedHeaders) : Observable<Frame>
+
+```js
+client.send('queuenamehere', 'Hello world').subscribe(() => console.log('sent'), () => console.log('error'));
+```
 
 ## Authors
 

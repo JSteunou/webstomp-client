@@ -49,5 +49,8 @@
     "preversion": "npm run lintnofix && npm run test",
     "postversion": "git push --follow-tags && npm publish",
     "prepublish": "in-publish && npm run build || not-in-publish"
+  },
+  "dependencies": {
+    "rxjs": "^5.1.1"
   }
 }

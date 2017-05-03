@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebStomp with rxjs</title>
+    <style type="text/css">
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Web Stomp Tasks with RMQ and rxjs</h1>
+    </header>
+
+    <div class="wrapper">
+        <div data-info>Connecting...</div>
+        <button data-add disabled>Add line</button><button data-push disabled>Push task</button>
+
+        <ul data-lines></ul>
+    </div>
+
+    <script type="text/javascript" src="../dist/webstomp.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+
+            var url = 'ws://localhost:15674/ws',
+            login = 'guest', password = 'guest';
+
+            var clients = {
+                master: webstomp.rxClient(url),
+                slaves: [],
+                
+            };
+
+            var tasks = lines = 0;
+
+            var info = document.querySelector('[data-info]');
+            var linesNode = document.querySelector('[data-lines]');
+            var addBtn = document.querySelector('[data-add]');
+            var pushBtn = document.querySelector('[data-push]');
+
+            function toggleButtons(enable) {
+                if (enable) {
+                    addBtn.removeAttribute('disabled');
+                    pushBtn.removeAttribute('disabled');
+                } else {
+                    addBtn.setAttribute('disabled', '');
+                    pushBtn.setAttribute('disabled', '');
+                }
+            }
+            function onMessage(line, message) {
+                var node = document.querySelector('[data-line="' + line + '"]');
+                node.innerHTML += ' ' + message.body;
+            }
+            function onAddLine() {
+                var line = document.createElement('li');
+                line.setAttribute('data-line', lines++);
+                linesNode.appendChild(line);
+                var client = webstomp.rxClient(url);
+                clients.slaves.push(client);
+                client.connect(login, password).subscribe(function() {
+                    var observableSub = client.getObservableSubscription('webstomp-tasks-example').switchMap(function(sub){return sub.messages}).subscribe(onMessage.bind(this, lines-1), (error) => console.log(error));
+                });
+            }
+            function onPush() {
+                clients.master.send('webstomp-tasks-example', ++tasks).subscribe(() => console.log("Sent!"));
+            }
+            function onError(err) {
+                toggleButtons(false);
+                info.innerHTML = 'disconnected. ' + err;
+            }
+            function onConnect(client) {
+                info.innerHTML = 'connected.';
+                toggleButtons(true);
+            }
+
+
+
+            addBtn.addEventListener('click', onAddLine);
+            pushBtn.addEventListener('click', onPush);
+
+            clients.connection = clients.master.connect(login, password).subscribe(onConnect, onError);
+            
+        });
+    </script>
+
+</body>
+</html>

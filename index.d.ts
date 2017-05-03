@@ -1,10 +1,15 @@
+import {Observable} from 'rxjs';
+
 // Type definitions for webstomp-client v1.0.x
 // Project: https://github.com/JSteunou/webstomp-client
 // Definitions by: Jimi Charalampidis <https://github.com/JimiC>
 
 export function client(url: string, options?: Options): Client;
 
+export function rxClient(url : string, options? : Options) : RxClient;
+
 export function over(socketType: any, options?: Options): Client;
+export function overRx(socketType: any, options?: Options): RxClient;
 
 export class Client {
 
@@ -30,6 +35,32 @@ export class Client {
   nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
 }
 
+export class RxClient{
+
+  get receipts() : Observable<Frame>;
+
+  connect(headers : ConnectionHeaders) : Observable<Frame>;
+  connect(login: string, passcode: string, host?: string): Observable<Frame>;
+
+  disconnect(headers?: DisconnectHeaders): Observable<Frame>;
+
+  send(destination: string, body?: string, headers?: ExtendedHeaders): Observable<Frame>;
+
+  getObservableSubscription(destination: string, headers?: SubscribeHeaders): Observable<RxSubscription>;
+
+  begin(transaction: string): Observable<RxTransaction>;
+
+  commit(transaction: string): Observable<Frame>;
+
+  abort(transaction: string): Observable<Frame>;
+
+  ack(messageID: string, subscription: Subscription, headers?: AckHeaders): Observable<Frame>;
+
+  nack(messageID: string, subscription: Subscription, headers?: NackHeaders): Observable<Frame>;
+
+}
+
+
 export class Frame {
   constructor(command: string, headers?: {}, body?: string);
 
@@ -51,6 +82,17 @@ export const VERSIONS: {
 export interface Heartbeat {
   outgoing: number,
   incoming: number
+}
+
+export interface RxSubscription{
+  id : string;
+  messages : Observable<Message>;
+}
+
+export interface RxTransaction{
+  id : string;
+  commit() : Observable<Frame>;
+  abort() : Observable<Frame>;
 }
 
 export interface Subscription {
@@ -121,3 +163,4 @@ export interface AckHeaders extends UnsubscribeHeaders {
 
 export interface NackHeaders extends AckHeaders {
 }
+

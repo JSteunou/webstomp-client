@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebStomp</title>
+    <style type="text/css">
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 1em;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1em;
+        }
+
+        .wrapper {
+            flex: 1 1 auto;
+            display: flex;
+        }
+
+        .wrapper > div {
+            flex: 0.5 1 auto;
+            border: black solid 1px;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .m-room-header {
+        }
+
+        .m-room-messages {
+            flex: 1;
+        }
+
+        .m-room-input {
+            display: flex;
+            height: 2em;
+            line-height: 2em;
+        }
+
+        .m-room-input input {
+            flex: 1 1 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Web Stomp Chat with RMQ</h1>
+    </header>
+
+    <div class="wrapper">
+        <div class="m-room" data-room="a">
+            <div class="m-room-header">
+                <p>Status: <span></span></p>
+            </div>
+            <div class="m-room-messages"></div>
+            <form class="m-room-input">
+                <label for="ia">User 1:&nbsp;</label><input id="ia" type="text">
+            </form>
+        </div>
+        <div class="m-room" data-room="b">
+            <div class="m-room-header">
+                <p>Status: <span></span></p>
+            </div>
+            <div class="m-room-messages"></div>
+            <form class="m-room-input">
+                <label for="ib">User 2:&nbsp;</label><input id="ib" type="text">
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="../dist/webstomp.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+
+            var url = 'ws://localhost:15674/ws',
+            login = 'guest', password = 'guest';
+
+            var roomsEl = {
+                a: document.querySelector('[data-room="a"]'),
+                b: document.querySelector('[data-room="b"]')
+            };
+
+            var clients = {
+                a: webstomp.rxClient(url),
+                b: webstomp.rxClient(url)
+            };
+
+            var names = {
+                a: 'User 1',
+                b: 'User 2'
+            };
+
+            var jsonEncoder = {
+                encode: function(msg) {
+                    return JSON.stringify(msg);
+                },
+                decode: function(msg) {
+                    return JSON.parse(msg);
+                }
+            };
+            var encoder = {encode: jsonEncoder.encode, decode: jsonEncoder.decode};
+
+            function trim(str) {
+                return str.replace(/^\s+|\s+$/g,'');
+            }
+            function onError(client, err) {
+                var roomEl = roomsEl[client];
+                var el = roomEl.querySelector('.m-room-header p span');
+                el.innerHTML = 'disconnected. ' + err;
+                var form = roomEl.querySelector('form');
+                if (form.sendCallback) form.removeEventListener('submit', form.sendCallback);
+            }
+            function onConnect(client) {
+                var roomEl = roomsEl[client];
+                var el = roomEl.querySelector('.m-room-header p span');
+                el.innerHTML = 'connected.';
+                addEntry(client, 'Welcome~~~');
+                clients[client].getObservableSubscription('/topic/webstomp-chat-example').subscribe(function(subscription){
+                    subscription.messages.subscribe(onMessage.bind(this, client));
+                });
+                var form = roomEl.querySelector('form');
+                if (!form.sendCallback) form.sendCallback = onSend.bind(this, client);
+                form.addEventListener('submit', function(ev) {
+                    ev.target.sendCallback();
+                    ev.preventDefault();
+                    return false;
+                });
+            }
+            function onMessage(client, msg) {
+                msg = encoder.decode(msg.body);
+                addEntry(client, msg.author + ': ' + msg.text);
+            }
+            function addEntry(client, msg) {
+                var roomEl = roomsEl[client];
+                var el = roomEl.querySelector('.m-room-messages');
+                var p = document.createElement('p');
+                p.innerHTML = msg;
+                el.insertBefore(p, null);
+            }
+            function onSend(client) {
+                var roomEl = roomsEl[client];
+                var input = roomEl.querySelector('input');
+                var msg = trim(input.value);
+                if (!msg) return;
+                msg = encoder.encode({
+                    author: names[client],
+                    text: msg
+                });
+                clients[client].send('/topic/webstomp-chat-example', msg).subscribe(function(){});
+                input.value = '';
+            }
+
+            clients.a.connect(login, password).subscribe(onConnect.bind(this, 'a'), onError.bind(this, 'a'));
+            clients.b.connect(login, password).subscribe(onConnect.bind(this, 'b'), onError.bind(this, 'b'));
+
+        });
+    </script>
+
+</body>
+</html>
