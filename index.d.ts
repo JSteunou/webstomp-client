@@ -77,9 +77,10 @@ export interface ClientOptions {
 }
 
 export interface ConnectionHeaders {
-  login: string;
-  passcode: string;
+  login?: string;
+  passcode?: string;
   host?: string;
+  [key: string]: string;
 }
 
 export interface DisconnectHeaders {
