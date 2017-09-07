@@ -1,3 +1,8 @@
+# 1.0.7 - 07 Sep. 2017
+
+* Fix TS definition: added custom headers to .connect()
+
+
 # 1.0.6 - 15 Feb. 2016
 
 * Fix missing TS definitions file in package.json
