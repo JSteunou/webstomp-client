@@ -80,7 +80,7 @@ export interface ConnectionHeaders {
   login?: string;
   passcode?: string;
   host?: string;
-  [key: string]: string;
+  [key: string]: string | undefined;
 }
 
 export interface DisconnectHeaders {
