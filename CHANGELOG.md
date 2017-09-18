@@ -1,3 +1,8 @@
+# 1.0.8 - 18 Sep. 2017
+
+* Fix TS definition: #49 Fix strictNullChecks incompatibility
+
+
 # 1.0.7 - 07 Sep. 2017
 
 * Fix TS definition: added custom headers to .connect()
