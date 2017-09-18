@@ -11,41 +11,41 @@
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
-
+/******/
 /******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
+/******/ 		if(installedModules[moduleId]) {
 /******/ 			return installedModules[moduleId].exports;
-
+/******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
 /******/ 			l: false,
 /******/ 			exports: {}
 /******/ 		};
-
+/******/
 /******/ 		// Execute the module function
 /******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
+/******/
 /******/ 		// Flag the module as loaded
 /******/ 		module.l = true;
-
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-
-
+/******/
+/******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
-
+/******/
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
-
+/******/
 /******/ 	// identity function for calling harmony imports with the correct context
 /******/ 	__webpack_require__.i = function(value) { return value; };
-
+/******/
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
@@ -56,7 +56,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 			});
 /******/ 		}
 /******/ 	};
-
+/******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
 /******/ 	__webpack_require__.n = function(module) {
 /******/ 		var getter = module && module.__esModule ?
@@ -65,13 +65,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 		__webpack_require__.d(getter, 'a', getter);
 /******/ 		return getter;
 /******/ 	};
-
+/******/
 /******/ 	// Object.prototype.hasOwnProperty.call
 /******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-
+/******/
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
-
+/******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = 3);
 /******/ })
@@ -599,18 +599,16 @@ var Client = function () {
             }
 
             if (!(this.heartbeat.incoming === 0 || serverOutgoing === 0)) {
-                (function () {
-                    var ttl = Math.max(_this2.heartbeat.incoming, serverOutgoing);
-                    _this2.debug('check PONG every ' + ttl + 'ms');
-                    _this2.ponger = setInterval(function () {
-                        var delta = Date.now() - _this2.serverActivity;
-                        // We wait twice the TTL to be flexible on window's setInterval calls
-                        if (delta > ttl * 2) {
-                            _this2.debug('did not receive server activity for the last ' + delta + 'ms');
-                            _this2.ws.close();
-                        }
-                    }, ttl);
-                })();
+                var _ttl = Math.max(this.heartbeat.incoming, serverOutgoing);
+                this.debug('check PONG every ' + _ttl + 'ms');
+                this.ponger = setInterval(function () {
+                    var delta = Date.now() - _this2.serverActivity;
+                    // We wait twice the TTL to be flexible on window's setInterval calls
+                    if (delta > _ttl * 2) {
+                        _this2.debug('did not receive server activity for the last ' + delta + 'ms');
+                        _this2.ws.close();
+                    }
+                }, _ttl);
             }
         }
 
