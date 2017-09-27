@@ -71,9 +71,9 @@ export interface Options extends ClientOptions {
 }
 
 export interface ClientOptions {
-  binary: boolean;
-  heartbeat: Heartbeat | boolean;
-  debug: boolean;
+  binary?: boolean;
+  heartbeat?: Heartbeat | boolean;
+  debug?: boolean;
 }
 
 export interface ConnectionHeaders {
