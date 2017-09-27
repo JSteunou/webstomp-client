@@ -8,8 +8,8 @@ export function over(socketType: any, options?: Options): Client;
 
 export class Client {
 
-  connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: string) => any): void;
-  connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: string) => any, host?: string): void;
+  connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any): void;
+  connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any, host?: string): void;
 
   disconnect(disconnectCallback: () => any, headers?: DisconnectHeaders): void;
 
