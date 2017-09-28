@@ -31,12 +31,16 @@ export class Client {
 }
 
 export class Frame {
-  constructor(command: string, headers?: {}, body?: string);
+  command: string;
+  body: string;
+  headers: ExtendedHeaders;
 
+  constructor(command: string, headers?: {}, body?: string);
   toString(): string;
-  sizeOfUTF8(s: string): number;
-  unmarshall(datas: any): any;
-  marshall(command: string, headers?: {}, body?: string): any;
+
+  static unmarshallSingle(data: string): Frame;
+  static unmarshall(datas: string): { frames: Frame[], partial?: string };
+  static marshall(command: string, headers?: {}, body?: string): string;
 }
 
 export const VERSIONS: {
@@ -58,10 +62,7 @@ export interface Subscription {
   unsubscribe: () => void;
 }
 
-export interface Message {
-  command: string;
-  body: string;
-  headers: ExtendedHeaders,
+export interface Message extends Frame {
   ack(headers?: AckHeaders): any;
   nack(headers?: NackHeaders): any;
 }
