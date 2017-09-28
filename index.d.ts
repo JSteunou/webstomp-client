@@ -67,13 +67,13 @@ export interface Message {
 }
 
 export interface Options extends ClientOptions {
-  protocols: Array<string>;
+  protocols?: Array<string>;
 }
 
 export interface ClientOptions {
-  binary: boolean;
-  heartbeat: Heartbeat | boolean;
-  debug: boolean;
+  binary?: boolean;
+  heartbeat?: Heartbeat | boolean;
+  debug?: boolean;
 }
 
 export interface ConnectionHeaders {
