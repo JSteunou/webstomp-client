@@ -304,8 +304,9 @@ class Client {
 
     // Base method to transmit any stomp frame
     _transmit(command, headers, body) {
-        let out = Frame.marshall(command, headers, body);
-        this.debug(`>>> ${out}`);
+        const frame = new Frame(command, headers, body);
+        const out = Frame.marshall(frame);
+        this.debug(`>>> ${out}`, frame);
         this._wsSend(out);
     }
 
