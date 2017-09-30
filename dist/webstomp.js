@@ -232,10 +232,8 @@ var Client = function () {
 
     _createClass(Client, [{
         key: 'debug',
-        value: function debug() {
-            var _console;
-
-            if (this.hasDebug) (_console = console).log.apply(_console, arguments);
+        value: function debug(message, frame) {
+            if (this.hasDebug) console.log(message);
         }
 
         // [CONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECT_or_STOMP_Frame)
@@ -547,8 +545,9 @@ var Client = function () {
     }, {
         key: '_transmit',
         value: function _transmit(command, headers, body) {
-            var out = _frame2.default.marshall(command, headers, body);
-            this.debug('>>> ' + out);
+            var frame = new _frame2.default(command, headers, body);
+            var out = _frame2.default.marshall(frame);
+            this.debug('>>> ' + out, frame);
             this._wsSend(out);
         }
     }, {
@@ -829,8 +828,7 @@ var Frame = function () {
 
     }, {
         key: 'marshall',
-        value: function marshall(command, headers, body) {
-            var frame = new Frame(command, headers, body);
+        value: function marshall(frame) {
             return frame.toString() + _utils.BYTES.NULL;
         }
     }]);
