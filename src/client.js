@@ -45,8 +45,8 @@ class Client {
     //         // append the debug log to a #debug div
     //         $("#debug").append(str + "\n");
     //     };
-    debug(...args) {
-        if (this.hasDebug) console.log(...args);
+    debug(message, frame) {
+        if (this.hasDebug) console.log(message);
     }
 
     // [CONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECT_or_STOMP_Frame)
