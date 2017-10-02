@@ -16,7 +16,7 @@ export class Client {
   connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any): void;
   connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any, host?: string): void;
 
-  disconnect(disconnectCallback: () => any, headers?: DisconnectHeaders): void;
+  disconnect(disconnectCallback?: () => any, headers?: DisconnectHeaders): void;
 
   send(destination: string, body?: string, headers?: ExtendedHeaders): void;
 
