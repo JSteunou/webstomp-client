@@ -68,7 +68,7 @@ export interface Subscription {
 }
 
 export interface SubscriptionsMap {
-  [id: string]: (frame?: Frame) => any;
+  [id: string]: (message: Message) => any;
 }
 
 export interface Message extends Frame {
