@@ -45,8 +45,8 @@ class Client {
     //         // append the debug log to a #debug div
     //         $("#debug").append(str + "\n");
     //     };
-    debug(...args) {
-        if (this.hasDebug) console.log(...args);
+    debug(message) {
+        if (this.hasDebug) console.log(message);
     }
 
     // [CONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECT_or_STOMP_Frame)
@@ -304,8 +304,9 @@ class Client {
 
     // Base method to transmit any stomp frame
     _transmit(command, headers, body) {
-        let out = Frame.marshall(command, headers, body);
-        this.debug(`>>> ${out}`);
+        const frame = new Frame(command, headers, body);
+        const out = Frame.marshall(frame);
+        this.debug(`>>> ${out}`, frame);
         this._wsSend(out);
     }
 

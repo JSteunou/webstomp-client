@@ -99,8 +99,7 @@ class Frame {
     }
 
     // Marshall a Stomp frame
-    static marshall(command, headers, body) {
-        let frame = new Frame(command, headers, body);
+    static marshall(frame) {
         return frame.toString() + BYTES.NULL;
     }
 
