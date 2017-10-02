@@ -45,7 +45,7 @@ class Client {
     //         // append the debug log to a #debug div
     //         $("#debug").append(str + "\n");
     //     };
-    debug(message, frame) {
+    debug(message) {
         if (this.hasDebug) console.log(message);
     }
 

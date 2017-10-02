@@ -232,7 +232,7 @@ var Client = function () {
 
     _createClass(Client, [{
         key: 'debug',
-        value: function debug(message, frame) {
+        value: function debug(message) {
             if (this.hasDebug) console.log(message);
         }
 
