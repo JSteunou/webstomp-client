@@ -1,6 +1,7 @@
 // Type definitions for webstomp-client v1.0.x
 // Project: https://github.com/JSteunou/webstomp-client
 // Definitions by: Jimi Charalampidis <https://github.com/JimiC>
+//                 Rodolfo Aguirre <https://github.com/roddolf>
 
 export function client(url: string, options?: Options): Client;
 
@@ -33,6 +34,8 @@ export class Client {
   ack(messageID: string, subscription: Subscription, headers?: AckHeaders): void;
 
   nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
+
+  debug(...args: any[]): void;
 }
 
 export class Frame {
