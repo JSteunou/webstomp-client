@@ -54,7 +54,7 @@ export const VERSIONS: {
   V1_2: string,
   // Versions of STOMP specifications supported
   supportedVersions: () => string,
-  supportedProtocols: () => Array<string>
+  supportedProtocols: () => string[]
 }
 
 export interface Heartbeat {
@@ -78,7 +78,7 @@ export interface Message extends Frame {
 }
 
 export interface Options extends ClientOptions {
-  protocols?: Array<string>;
+  protocols?: string[];
 }
 
 export interface ClientOptions {
