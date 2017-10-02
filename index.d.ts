@@ -7,7 +7,11 @@ export function client(url: string, options?: Options): Client;
 export function over(socketType: any, options?: Options): Client;
 
 export class Client {
-  connected:boolean;
+  connected: boolean;
+  isBinary: boolean;
+  partialData: string;
+  subscriptions: SubscriptionsMap;
+  ws: any;
 
   connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any): void;
   connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any, host?: string): void;
@@ -61,6 +65,10 @@ export interface Heartbeat {
 export interface Subscription {
   id: string;
   unsubscribe: () => void;
+}
+
+export interface SubscriptionsMap {
+  [id: string]: (frame?: Frame) => any;
 }
 
 export interface Message extends Frame {
