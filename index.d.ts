@@ -38,14 +38,14 @@ export class Client {
 export class Frame {
   command: string;
   body: string;
-  headers: ExtendedHeaders;
+  headers: Headers;
 
-  constructor(command: string, headers?: {}, body?: string);
+  constructor(command: string, headers?: Headers, body?: string);
   toString(): string;
 
   static unmarshallSingle(data: string): Frame;
   static unmarshall(datas: string): { frames: Frame[], partial?: string };
-  static marshall(command: string, headers?: {}, body?: string): string;
+  static marshall(command: string, headers?: Headers, body?: string): string;
 }
 
 export const VERSIONS: {
@@ -72,6 +72,7 @@ export interface SubscriptionsMap {
 }
 
 export interface Message extends Frame {
+  headers: ExtendedHeaders;
   ack(headers?: AckHeaders): any;
   nack(headers?: NackHeaders): any;
 }
@@ -86,14 +87,17 @@ export interface ClientOptions {
   debug?: boolean;
 }
 
-export interface ConnectionHeaders {
-  login?: string;
-  passcode?: string;
-  host?: string;
+export interface Headers {
   [key: string]: string | undefined;
 }
 
-export interface DisconnectHeaders {
+export interface ConnectionHeaders extends Headers {
+  login?: string;
+  passcode?: string;
+  host?: string;
+}
+
+export interface DisconnectHeaders extends Headers {
   'receipt'?: string;
 }
 
