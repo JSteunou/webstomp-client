@@ -1,6 +1,6 @@
 // Type definitions for webstomp-client v1.0.x
 // Project: https://github.com/JSteunou/webstomp-client
-// Definitions by: Jimi Charalampidis <https://github.com/JimiC>,
+// Definitions by: Jimi Charalampidis <https://github.com/JimiC>
 //                 Rodolfo Aguirre <https://github.com/roddolf>
 
 export function client(url: string, options?: Options): Client;
