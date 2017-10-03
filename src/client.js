@@ -170,8 +170,9 @@ class Client {
     //
     // * `destination` is MANDATORY.
     send(destination, body = '', headers = {}) {
-        headers.destination = destination;
-        this._transmit('SEND', headers, body);
+        const hdrs = Object.assign({}, headers);
+        hdrs.destination = destination;
+        this._transmit('SEND', hdrs, body);
     }
 
     // [BEGIN Frame](http://stomp.github.com/stomp-specification-1.1.html#BEGIN)
@@ -230,11 +231,12 @@ class Client {
     //       {'ack': 'client'}
     //     );
     ack(messageID, subscription, headers = {}) {
+        const hdrs = Object.assign({}, headers);
         // 1.2 change id header name from message-id to id
         var idAttr = this.version === VERSIONS.V1_2 ? 'id' : 'message-id';
-        headers[idAttr] = messageID;
-        headers.subscription = subscription;
-        this._transmit('ACK', headers);
+        hdrs[idAttr] = messageID;
+        hdrs.subscription = subscription;
+        this._transmit('ACK', hdrs);
     }
 
     // [NACK Frame](http://stomp.github.com/stomp-specification-1.1.html#NACK)
@@ -253,24 +255,26 @@ class Client {
     //       {'ack': 'client'}
     //     );
     nack(messageID, subscription, headers = {}) {
+        const hdrs = Object.assign({}, headers);
         // 1.2 change id header name from message-id to id
         var idAttr = this.version === VERSIONS.V1_2 ? 'id' : 'message-id';
-        headers[idAttr] = messageID;
-        headers.subscription = subscription;
-        this._transmit('NACK', headers);
+        hdrs[idAttr] = messageID;
+        hdrs.subscription = subscription;
+        this._transmit('NACK', hdrs);
     }
 
     // [SUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#SUBSCRIBE)
     subscribe(destination, callback, headers = {}) {
+        const hdrs = Object.assign({}, headers);
         // for convenience if the `id` header is not set, we create a new one for this client
         // that will be returned to be able to unsubscribe this subscription
-        if (!headers.id) headers.id = `sub-${createId()}`;
-        headers.destination = destination;
-        this.subscriptions[headers.id] = callback;
-        this._transmit('SUBSCRIBE', headers);
+        if (!hdrs.id) hdrs.id = `sub-${createId()}`;
+        hdrs.destination = destination;
+        this.subscriptions[hdrs.id] = callback;
+        this._transmit('SUBSCRIBE', hdrs);
         return {
-            id: headers.id,
-            unsubscribe: this.unsubscribe.bind(this, headers.id)
+            id: hdrs.id,
+            unsubscribe: this.unsubscribe.bind(this, hdrs.id)
         };
     }
 
@@ -285,9 +289,10 @@ class Client {
     //     ...
     //     subscription.unsubscribe(headers);
     unsubscribe(id, headers = {}) {
+        const hdrs = Object.assign({}, headers);
         delete this.subscriptions[id];
-        headers.id = id;
-        this._transmit('UNSUBSCRIBE', headers);
+        hdrs.id = id;
+        this._transmit('UNSUBSCRIBE', hdrs);
     }
 
 
