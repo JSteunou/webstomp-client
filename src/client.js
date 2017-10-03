@@ -1,5 +1,5 @@
 import Frame from './frame';
-import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray} from './utils';
+import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray, createId} from './utils';
 
 // STOMP Client Class
 //
@@ -15,8 +15,6 @@ class Client {
         this.ws.binaryType = 'arraybuffer';
         this.isBinary = !!binary;
         this.hasDebug = !!debug;
-        // used to index subscribers
-        this.counter = 0;
         this.connected = false;
         // Heartbeat properties of the client
         // outgoing: send heartbeat every 10s by default (value is in ms)
@@ -179,7 +177,7 @@ class Client {
     // [BEGIN Frame](http://stomp.github.com/stomp-specification-1.1.html#BEGIN)
     //
     // If no transaction ID is passed, one will be created automatically
-    begin(transaction = `tx-${this.counter++}`) {
+    begin(transaction = `tx-${createId()}`) {
         this._transmit('BEGIN', {transaction});
         return {
             id: transaction,
@@ -266,7 +264,7 @@ class Client {
     subscribe(destination, callback, headers = {}) {
         // for convenience if the `id` header is not set, we create a new one for this client
         // that will be returned to be able to unsubscribe this subscription
-        if (!headers.id) headers.id = 'sub-' + this.counter++;
+        if (!headers.id) headers.id = `sub-${createId()}`;
         headers.destination = destination;
         this.subscriptions[headers.id] = callback;
         this._transmit('SUBSCRIBE', headers);

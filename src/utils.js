@@ -45,3 +45,9 @@ export function sizeOfUTF8(s) {
     if (!s) return 0;
     return encodeURIComponent(s).match(/%..|./g).length;
 }
+
+export function createId() {
+    const ts = (new Date()).getTime();
+    const rand = Math.floor(Math.random() * 1000);
+    return `${ts}-${rand}`;
+}
