@@ -876,9 +876,9 @@ var webstomp = {
     // This method creates a WebSocket client that is connected to
     // the STOMP server located at the url.
     client: function client(url) {
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { protocols: _utils.VERSIONS.supportedProtocols() };
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-        var ws = new WebSocket(url, options.protocols);
+        var ws = new WebSocket(url, options.protocols || _utils.VERSIONS.supportedProtocols());
         return new _client2.default(ws, options);
     },
     // This method is an alternative to `webstomp.client()` to let the user
