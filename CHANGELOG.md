@@ -1,3 +1,13 @@
+# 1.1.0 - 09 Oct. 2017
+
+* Major index.d.ts update
+    * Update Frame typings #54
+    * These parameters have defaults so they are optional (#53)
+    * Connect returns Frame or CloseEvent on error (#51)
+* Copy headers instead of updating it #43
+* Stop using a counter and create a near unique id to avoid collision when using several Client instance 2aedaaa
+
+
 # 1.0.8 - 18 Sep. 2017
 
 * Fix TS definition: #49 Fix strictNullChecks incompatibility
