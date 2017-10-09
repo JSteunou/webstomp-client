@@ -1,17 +1,23 @@
 // Type definitions for webstomp-client v1.0.x
 // Project: https://github.com/JSteunou/webstomp-client
 // Definitions by: Jimi Charalampidis <https://github.com/JimiC>
+//                 Rodolfo Aguirre <https://github.com/roddolf>
 
 export function client(url: string, options?: Options): Client;
 
 export function over(socketType: any, options?: Options): Client;
 
 export class Client {
+  connected: boolean;
+  isBinary: boolean;
+  partialData: string;
+  subscriptions: SubscriptionsMap;
+  ws: any;
 
   connect(headers: ConnectionHeaders, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any): void;
   connect(login: string, passcode: string, connectCallback: (frame?: Frame) => any, errorCallback?: (error: CloseEvent | Frame) => any, host?: string): void;
 
-  disconnect(disconnectCallback: () => any, headers?: DisconnectHeaders): void;
+  disconnect(disconnectCallback?: () => any, headers?: DisconnectHeaders): void;
 
   send(destination: string, body?: string, headers?: ExtendedHeaders): void;
 
@@ -28,15 +34,21 @@ export class Client {
   ack(messageID: string, subscription: Subscription, headers?: AckHeaders): void;
 
   nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
+
+  debug(...args: any[]): void;
 }
 
 export class Frame {
-  constructor(command: string, headers?: {}, body?: string);
+  command: string;
+  body: string;
+  headers: Headers;
 
+  constructor(command: string, headers?: Headers, body?: string);
   toString(): string;
-  sizeOfUTF8(s: string): number;
-  unmarshall(datas: any): any;
-  marshall(command: string, headers?: {}, body?: string): any;
+
+  static unmarshallSingle(data: string): Frame;
+  static unmarshall(datas: string): { frames: Frame[], partial?: string };
+  static marshall(command: string, headers?: Headers, body?: string): string;
 }
 
 export const VERSIONS: {
@@ -45,7 +57,7 @@ export const VERSIONS: {
   V1_2: string,
   // Versions of STOMP specifications supported
   supportedVersions: () => string,
-  supportedProtocols: () => Array<string>
+  supportedProtocols: () => string[]
 }
 
 export interface Heartbeat {
@@ -58,16 +70,18 @@ export interface Subscription {
   unsubscribe: () => void;
 }
 
-export interface Message {
-  command: string;
-  body: string;
-  headers: ExtendedHeaders,
+export interface SubscriptionsMap {
+  [id: string]: (message: Message) => any;
+}
+
+export interface Message extends Frame {
+  headers: ExtendedHeaders;
   ack(headers?: AckHeaders): any;
   nack(headers?: NackHeaders): any;
 }
 
 export interface Options extends ClientOptions {
-  protocols?: Array<string>;
+  protocols?: string[];
 }
 
 export interface ClientOptions {
@@ -76,14 +90,17 @@ export interface ClientOptions {
   debug?: boolean;
 }
 
-export interface ConnectionHeaders {
-  login?: string;
-  passcode?: string;
-  host?: string;
+export interface Headers {
   [key: string]: string | undefined;
 }
 
-export interface DisconnectHeaders {
+export interface ConnectionHeaders extends Headers {
+  login?: string;
+  passcode?: string;
+  host?: string;
+}
+
+export interface DisconnectHeaders extends Headers {
   'receipt'?: string;
 }
 
