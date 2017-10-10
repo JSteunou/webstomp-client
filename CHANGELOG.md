@@ -1,3 +1,8 @@
+# 1.2.0 - 10 Oct. 2017
+
+* Change: Add data object as 2nd parameter for debug #55
+
+
 # 1.1.0 - 09 Oct. 2017
 
 * Change: Default option protocol should not be in options object by default #57
