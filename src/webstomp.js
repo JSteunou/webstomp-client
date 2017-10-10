@@ -1,6 +1,8 @@
 import Client from './client';
 import {VERSIONS} from './utils';
 
+export { default as Frame } from './frame';
+
 // The `webstomp` Object
 const webstomp = {
     VERSIONS,
