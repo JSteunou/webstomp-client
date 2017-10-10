@@ -226,7 +226,7 @@ var Client = function () {
     // This method is called for every actual transmission of the STOMP frames over the
     // WebSocket.
     //
-    // It is possible to set a `debug(message)` method
+    // It is possible to set a `debug(message, data)` method
     // on a client instance to handle differently the debug messages:
     //
     //     client.debug = function(str) {
@@ -342,10 +342,10 @@ var Client = function () {
                     }
                 });
             };
-            this.ws.onclose = function (ev) {
-                _this.debug('Whoops! Lost connection to ' + _this.ws.url + ':', ev);
+            this.ws.onclose = function (event) {
+                _this.debug('Whoops! Lost connection to ' + _this.ws.url + ':', { event: event });
                 _this._cleanUp();
-                if (errorCallback) errorCallback(ev);
+                if (errorCallback) errorCallback(event);
             };
             this.ws.onopen = function () {
                 _this.debug('Web Socket Opened...');
@@ -558,7 +558,7 @@ var Client = function () {
         key: '_transmit',
         value: function _transmit(command, headers, body) {
             var out = _frame2.default.marshall(command, headers, body);
-            this.debug('>>> ' + out);
+            this.debug('>>> ' + out, { frame: { command: command, headers: headers, body: body } });
             this._wsSend(out);
         }
     }, {
