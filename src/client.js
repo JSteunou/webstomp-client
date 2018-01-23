@@ -9,16 +9,10 @@ class Client {
 
     constructor(ws, options = {}) {
         // cannot have default options object + destructuring in the same time in method signature
-        let {
-            binary = false,
-            heartbeat = {outgoing: 10000, incoming: 10000},
-            debug = true,
-            decoder = data => typedArrayToUnicodeString(data)
-        } = options;
+        let {binary = false, heartbeat = {outgoing: 10000, incoming: 10000}, debug = true} = options;
 
         this.ws = ws;
         this.ws.binaryType = 'arraybuffer';
-        // this.ws.binaryType = 'blob';
         this.isBinary = !!binary;
         this.hasDebug = !!debug;
         this.connected = false;
@@ -30,11 +24,10 @@ class Client {
         // maximum *WebSocket* frame size sent by the client. If the STOMP frame
         // is bigger than this value, the STOMP frame will be sent using multiple
         // WebSocket frames (default is 16KiB)
-        this.maxWebSocketFrameSize = 16 * 1024 * 1024;
+        this.maxWebSocketFrameSize = 16 * 1024;
         // subscription callbacks indexed by subscriber's ID
         this.subscriptions = {};
         this.partialData = '';
-        this.decoder = decoder
     }
 
     // //// Debugging
@@ -70,37 +63,15 @@ class Client {
         let [headers, connectCallback, errorCallback] = this._parseConnect(...args);
         this.connectCallback = connectCallback;
         this.debug('Opening Web Socket...');
-
         this.ws.onmessage = (evt) => {
-            debugger
-            // console.log(evt.data)
-            // console.log(evt.data instanceof ArrayBuffer)
             let data = evt.data;
-            // console.log(this.decoder)
-            // console.dir('RAW DATA: ', evt.data)
-            // console.log('TYPE: ', typeof evt.data)
-            // console.log('Blob?: ', evt.data instanceof Blob)
-            // console.log('Buffer?: ', evt.data instanceof ArrayBuffer)
-            // data = this.decoder(data)
-            // console.log('PARSED DATA: ', data)
             if (evt.data instanceof ArrayBuffer) {
-                data = this.decoder(new Uint8Array(evt.data))
+                console.log('BINARY!')
+                data = typedArrayToUnicodeString(new Uint8Array(evt.data));
             }
-            if (evt.data instanceof Blob) {
-                data = this.decoder(new Uint8Array(evt.data))
-            }
-            // const escapable = /[\x00-\x1f\ud800-\udfff\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufff0-\uffff]/g;
-            //
-            // if (escapable.test(data)) {
-            //     data = data.replace(escapable, () => {
-            //         return '';
-            //     })
-            // }
+            // data = unescape(encodeURIComponent(JSON.stringify(data)));
+            // data = JSON.stringify(JSON.parse(decodeURIComponent(escape(data))));
 
-            debugger
-            // console.log('PARSED DATA: ', data)
-
-            // return
             this.serverActivity = Date.now();
             // heartbeat
             if (data === BYTES.LF) {
@@ -171,12 +142,7 @@ class Client {
                 }
             });
         };
-        this.ws.onerror = (err) => {
-            console.log('Error!:', err)
-        }
         this.ws.onclose = event => {
-            debugger
-            console.log(this.ws)
             this.debug(`Whoops! Lost connection to ${this.ws.url}:`, {event});
             this._cleanUp();
             if (errorCallback) errorCallback(event);
@@ -303,6 +269,7 @@ class Client {
 
     // [SUBSCRIBE Frame](http://stomp.github.com/stomp-specification-1.1.html#SUBSCRIBE)
     subscribe(destination, callback, headers = {}) {
+        console.log('subscribe', destination)
         const hdrs = Object.assign({}, headers);
         // for convenience if the `id` header is not set, we create a new one for this client
         // that will be returned to be able to unsubscribe this subscription
