@@ -67,18 +67,20 @@ class Frame {
         return new Frame(command, headers, body);
     }
 
-    // Split the data before unmarshalling every single STOMP frame.
-    // Web socket servers can send multiple frames in a single websocket message.
-    // If the message size exceeds the websocket message size, then a single
-    // frame can be fragmented across multiple messages.
-    //
-    // `datas` is a string.
-    //
-    // returns an *array* of Frame objects
-    static unmarshall(datas) {
-        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
-        // The data is split when a NULL byte (followed by zero or many LF bytes) is found
-        let frames = datas.split(new RegExp(BYTES.NULL + BYTES.LF + '*')),
+    // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
+    // The data is split when a NULL byte (followed by zero or many LF bytes) is found
+    static unmarshallText(data) {
+        // Split the data before unmarshalling every single STOMP frame.
+        // Web socket servers can send multiple frames in a single websocket message.
+        // If the message size exceeds the websocket message size, then a single
+        // frame can be fragmented across multiple messages.
+        //
+        // `data` is a string.
+
+        if (data === BYTES.LF) {
+            return { frames: [{ type: 'heartbeat' }] }
+        }
+        let frames = data.split(new RegExp(BYTES.NULL + BYTES.LF + '*')),
             firstFrames = frames.slice(0, -1),
             lastFrame = frames.slice(-1)[0],
             r = {
@@ -96,6 +98,25 @@ class Frame {
         }
 
         return r;
+    }
+
+    static unmarshallBinary(partialData, data) {
+        const arr = new Uint8Array(data)
+        const parsedData = String.fromCharCode(...arr);
+        const datas = parsedData + parsedData
+        if (datas === BYTES.LF) {
+            return { frames: [{ type: 'heartbeat' }] }
+        }
+        console.log(datas)
+        return { frames: [] }
+    }
+
+    static unmarshall(partialData, data) {
+        if (data instanceof ArrayBuffer) {
+            return this.unmarshallBinary(partialData, data)
+        }
+        const datas = partialData + data
+        return this.unmarshallText(datas)
     }
 
     // Marshall a Stomp frame

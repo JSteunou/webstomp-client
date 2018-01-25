@@ -64,27 +64,34 @@ class Client {
         this.connectCallback = connectCallback;
         this.debug('Opening Web Socket...');
         this.ws.onmessage = (evt) => {
-            let data = evt.data;
-            if (evt.data instanceof ArrayBuffer) {
-                console.log('BINARY!')
-                data = typedArrayToUnicodeString(new Uint8Array(evt.data));
-            }
+            // let data = evt.data;
+            // if (evt.data instanceof ArrayBuffer) {
+            //     data = typedArrayToUnicodeString(new Uint8Array(evt.data));
+            // }
             // data = unescape(encodeURIComponent(JSON.stringify(data)));
             // data = JSON.stringify(JSON.parse(decodeURIComponent(escape(data))));
 
             this.serverActivity = Date.now();
             // heartbeat
-            if (data === BYTES.LF) {
-                this.debug('<<< PONG');
-                return;
+            // if (data === BYTES.LF) {
+            //     this.debug('<<< PONG');
+            //     return;
+            // }
+            if (evt.data instanceof ArrayBuffer) {
+                // data = typedArrayToUnicodeString(new Uint8Array(evt.data));
+                this.debug(`<<< ${String.fromCharCode(...evt.data)}`);
             }
-            this.debug(`<<< ${data}`);
             // Handle STOMP frames received from the server
             // The unmarshall function returns the frames parsed and any remaining
             // data from partial frames.
-            const unmarshalledData = Frame.unmarshall(this.partialData + data);
+            // debugger
+            const unmarshalledData = Frame.unmarshall(this.partialData, evt.data);
             this.partialData = unmarshalledData.partial;
             unmarshalledData.frames.forEach(frame => {
+                if (frame.type === 'heartbeat') {
+                    this.debug('<<< PONG');
+                    return;
+                }
                 switch (frame.command) {
                     // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
                     case 'CONNECTED':
@@ -133,7 +140,7 @@ class Client {
                     case 'RECEIPT':
                         if (this.onreceipt) this.onreceipt(frame);
                         break;
-                    // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
+                    // // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
                     case 'ERROR':
                         if (errorCallback) errorCallback(frame);
                         break;

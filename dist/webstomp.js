@@ -172,6 +172,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _utils = __webpack_require__(0);
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 // [STOMP Frame](http://stomp.github.com/stomp-specification-1.1.html#STOMP_Frames) Class
@@ -277,21 +279,23 @@ var Frame = function () {
             return new Frame(command, headers, body);
         }
 
-        // Split the data before unmarshalling every single STOMP frame.
-        // Web socket servers can send multiple frames in a single websocket message.
-        // If the message size exceeds the websocket message size, then a single
-        // frame can be fragmented across multiple messages.
-        //
-        // `datas` is a string.
-        //
-        // returns an *array* of Frame objects
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
+        // The data is split when a NULL byte (followed by zero or many LF bytes) is found
 
     }, {
-        key: 'unmarshall',
-        value: function unmarshall(datas) {
-            // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
-            // The data is split when a NULL byte (followed by zero or many LF bytes) is found
-            var frames = datas.split(new RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*')),
+        key: 'unmarshallText',
+        value: function unmarshallText(data) {
+            // Split the data before unmarshalling every single STOMP frame.
+            // Web socket servers can send multiple frames in a single websocket message.
+            // If the message size exceeds the websocket message size, then a single
+            // frame can be fragmented across multiple messages.
+            //
+            // `data` is a string.
+
+            if (data === _utils.BYTES.LF) {
+                return { frames: [{ type: 'heartbeat' }] };
+            }
+            var frames = data.split(new RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*')),
                 firstFrames = frames.slice(0, -1),
                 lastFrame = frames.slice(-1)[0],
                 r = {
@@ -311,6 +315,27 @@ var Frame = function () {
             }
 
             return r;
+        }
+    }, {
+        key: 'unmarshallBinary',
+        value: function unmarshallBinary(partialData, data) {
+            var arr = new Uint8Array(data);
+            var parsedData = String.fromCharCode.apply(String, _toConsumableArray(arr));
+            var datas = parsedData + parsedData;
+            if (datas === _utils.BYTES.LF) {
+                return { frames: [{ type: 'heartbeat' }] };
+            }
+            console.log(datas);
+            return { frames: [] };
+        }
+    }, {
+        key: 'unmarshall',
+        value: function unmarshall(partialData, data) {
+            if (data instanceof ArrayBuffer) {
+                return this.unmarshallBinary(partialData, data);
+            }
+            var datas = partialData + data;
+            return this.unmarshallText(datas);
         }
 
         // Marshall a Stomp frame
@@ -351,6 +376,8 @@ var _frame2 = _interopRequireDefault(_frame);
 var _utils = __webpack_require__(0);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -442,27 +469,34 @@ var Client = function () {
             this.connectCallback = connectCallback;
             this.debug('Opening Web Socket...');
             this.ws.onmessage = function (evt) {
-                var data = evt.data;
-                if (evt.data instanceof ArrayBuffer) {
-                    console.log('BINARY!');
-                    data = (0, _utils.typedArrayToUnicodeString)(new Uint8Array(evt.data));
-                }
+                // let data = evt.data;
+                // if (evt.data instanceof ArrayBuffer) {
+                //     data = typedArrayToUnicodeString(new Uint8Array(evt.data));
+                // }
                 // data = unescape(encodeURIComponent(JSON.stringify(data)));
                 // data = JSON.stringify(JSON.parse(decodeURIComponent(escape(data))));
 
                 _this.serverActivity = Date.now();
                 // heartbeat
-                if (data === _utils.BYTES.LF) {
-                    _this.debug('<<< PONG');
-                    return;
+                // if (data === BYTES.LF) {
+                //     this.debug('<<< PONG');
+                //     return;
+                // }
+                if (evt.data instanceof ArrayBuffer) {
+                    // data = typedArrayToUnicodeString(new Uint8Array(evt.data));
+                    _this.debug('<<< ' + String.fromCharCode.apply(String, _toConsumableArray(evt.data)));
                 }
-                _this.debug('<<< ' + data);
                 // Handle STOMP frames received from the server
                 // The unmarshall function returns the frames parsed and any remaining
                 // data from partial frames.
-                var unmarshalledData = _frame2.default.unmarshall(_this.partialData + data);
+                // debugger
+                var unmarshalledData = _frame2.default.unmarshall(_this.partialData, evt.data);
                 _this.partialData = unmarshalledData.partial;
                 unmarshalledData.frames.forEach(function (frame) {
+                    if (frame.type === 'heartbeat') {
+                        _this.debug('<<< PONG');
+                        return;
+                    }
                     switch (frame.command) {
                         // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
                         case 'CONNECTED':
@@ -509,7 +543,7 @@ var Client = function () {
                         case 'RECEIPT':
                             if (_this.onreceipt) _this.onreceipt(frame);
                             break;
-                        // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
+                        // // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
                         case 'ERROR':
                             if (errorCallback) errorCallback(frame);
                             break;
