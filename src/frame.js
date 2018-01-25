@@ -144,9 +144,6 @@ class Frame {
     }
 
     static unmarshall(partialData, data, isBinary) {
-        // if (data instanceof ArrayBuffer) {
-        //     return this.unmarshallBinary(partialData, data)
-        // }
         if (isBinary) {
             return this.unmarshallBinary(partialData, data)
         }
