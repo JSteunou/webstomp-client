@@ -33,7 +33,7 @@ class Frame {
     }
 
     // Unmarshall a single STOMP frame from a `data` string
-    static unmarshallSingle(data) {
+    static unmarshallTextSingle(data) {
         // search for 2 consecutives LF byte to split the command
         // and headers from the bodyc
         let divider = data.search(new RegExp(BYTES.LF + BYTES.LF)),
@@ -92,7 +92,7 @@ class Frame {
         // without any other content, process this frame, otherwise return the
         // contents of the buffer to the caller.
         if (lastFrame === BYTES.LF || (lastFrame.search(RegExp(BYTES.NULL + BYTES.LF + '*$'))) !== -1) {
-            r.frames.push(Frame.unmarshallSingle(lastFrame));
+            r.frames.push(Frame.unmarshallTextSingle(lastFrame));
         } else {
             r.partial = lastFrame;
         }
@@ -100,29 +100,20 @@ class Frame {
         return r;
     }
 
-    static unmarshallBinary(partialData, data) {
-        // debugger
-        // console.log(data)
-        data = new Uint8Array(data)
-        const datas = partialData ? partialData + new Uint8Array([...partialData, ...data]) : data
-        // console.log(datas)
-        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
-            return { frames: [{ type: 'heartbeat' }] }
-        }
-        // let frames = datas.split(new RegExp(BYTES.NULL + BYTES.LF + '*'))
-
+    static unmarshallBinarySingle(data) {
         let headerBlock;
         let body;
 
-        for (let i = 0; i < datas.length; i++) {
-            if (datas[i] === BYTES.LF_CODE && datas[i + 1] === BYTES.LF_CODE) {
-                headerBlock = datas.slice(0, i)
-                body = datas.slice(i + 2, datas.length - 1)
+        for (let i = 0; i < data.length; i++) {
+            if (data[i] === BYTES.LF_CODE && data[i + 1] === BYTES.LF_CODE) {
+                headerBlock = data.slice(0, i + 1)
+                body = data.slice(i + 2, data.length - 1)
+                break
             }
         }
 
         let headerLines = []
-        let  divider = 0
+        let divider = 0
         for (let i = 0; i < headerBlock.length; i++) {
             if (headerBlock[i] === BYTES.LF_CODE) {
                 headerLines.push(headerBlock.slice(divider, i))
@@ -137,51 +128,29 @@ class Frame {
             const line = String.fromCharCode(...headerLines[i]).split(':')
             headers[line[0]] = line[1]
         }
-
-
-        // console.log('headers: ', headers)
-        // console.log('headers Object: ', headersObj)
-        // console.log('body: ', body)
-            // firstFrames = frames.slice(0, -1),
-            // lastFrame = frames.slice(-1)[0],
-            // r = {
-            //     frames: firstFrames.map(f => Frame.unmarshallSingle(f)),
-            //     partial: ''
-            // };
-        console.log({
-            command,
-            headers,
-            body
-        })
-        let r = {
-            frames: [
-                {
-                    command,
-                    headers,
-                    body
-                }
-            ]
-        }
-        // let r = {
-        //     frames: frames.map(f => Frame.unmarshallSingle(f))
-        // }
-        // If this contains a final full message or just a acknowledgement of a PING
-        // without any other content, process this frame, otherwise return the
-        // contents of the buffer to the caller.
-        // if (lastFrame === BYTES.LF || (lastFrame.search(RegExp(BYTES.NULL + BYTES.LF + '*$'))) !== -1) {
-        //     r.frames.push(Frame.unmarshallSingle(lastFrame));
-        // } else {
-        //     r.partial = lastFrame;
-        // }
-
-        return r;
-        // return { frames }
+        return new Frame(command, headers, body);
     }
 
-    static unmarshall(partialData, data) {
-        if (data instanceof ArrayBuffer) {
+    static unmarshallBinary(partialData, data) {
+        data = new Uint8Array(data)
+        const datas = partialData ? partialData + new Uint8Array([...partialData, ...data]) : data
+        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
+            return { frames: [{ type: 'heartbeat' }] }
+        }
+
+        return {
+            frames: [this.unmarshallBinarySingle(datas)]
+        }
+    }
+
+    static unmarshall(partialData, data, isBinary) {
+        // if (data instanceof ArrayBuffer) {
+        //     return this.unmarshallBinary(partialData, data)
+        // }
+        if (isBinary) {
             return this.unmarshallBinary(partialData, data)
         }
+
         const datas = partialData + data
         return this.unmarshallText(datas)
     }

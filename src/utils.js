@@ -25,6 +25,7 @@ export function unicodeStringToTypedArray(s) {
     let escstr = encodeURIComponent(s);
     let binstr = escstr.replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1));
     let arr = Array.prototype.map.call(binstr, (c) => c.charCodeAt(0));
+    // debugger
     return new Uint8Array(arr);
 }
 

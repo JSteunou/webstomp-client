@@ -110,8 +110,10 @@ var VERSIONS = exports.VERSIONS = {
 var BYTES = exports.BYTES = {
     // LINEFEED byte (octet 10)
     LF: '\x0A',
+    LF_CODE: 10,
     // NULL byte (octet 0)
-    NULL: '\x00'
+    NULL: '\x00',
+    NULL_CODE: 0
 };
 
 // utility function to trim any whitespace before and after a string
@@ -128,6 +130,7 @@ function unicodeStringToTypedArray(s) {
     var arr = Array.prototype.map.call(binstr, function (c) {
         return c.charCodeAt(0);
     });
+    // debugger
     return new Uint8Array(arr);
 }
 
@@ -221,10 +224,10 @@ var Frame = function () {
         // Unmarshall a single STOMP frame from a `data` string
 
     }], [{
-        key: 'unmarshallSingle',
-        value: function unmarshallSingle(data) {
+        key: 'unmarshallTextSingle',
+        value: function unmarshallTextSingle(data) {
             // search for 2 consecutives LF byte to split the command
-            // and headers from the body
+            // and headers from the bodyc
             var divider = data.search(new RegExp(_utils.BYTES.LF + _utils.BYTES.LF)),
                 headerLines = data.substring(0, divider).split(_utils.BYTES.LF),
                 command = headerLines.shift(),
@@ -309,7 +312,7 @@ var Frame = function () {
             // without any other content, process this frame, otherwise return the
             // contents of the buffer to the caller.
             if (lastFrame === _utils.BYTES.LF || lastFrame.search(RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*$')) !== -1) {
-                r.frames.push(Frame.unmarshallSingle(lastFrame));
+                r.frames.push(Frame.unmarshallTextSingle(lastFrame));
             } else {
                 r.partial = lastFrame;
             }
@@ -317,23 +320,60 @@ var Frame = function () {
             return r;
         }
     }, {
+        key: 'unmarshallBinarySingle',
+        value: function unmarshallBinarySingle(data) {
+            var headerBlock = void 0;
+            var body = void 0;
+
+            for (var i = 0; i < data.length; i++) {
+                if (data[i] === _utils.BYTES.LF_CODE && data[i + 1] === _utils.BYTES.LF_CODE) {
+                    headerBlock = data.slice(0, i + 1);
+                    body = data.slice(i + 2, data.length - 1);
+                    break;
+                }
+            }
+
+            var headerLines = [];
+            var divider = 0;
+            for (var _i = 0; _i < headerBlock.length; _i++) {
+                if (headerBlock[_i] === _utils.BYTES.LF_CODE) {
+                    headerLines.push(headerBlock.slice(divider, _i));
+                    divider = _i + 1;
+                }
+            }
+
+            var command = String.fromCharCode.apply(String, _toConsumableArray(headerLines.shift()));
+
+            var headers = {};
+            for (var _i2 = 0; _i2 < headerLines.length; _i2++) {
+                var line = String.fromCharCode.apply(String, _toConsumableArray(headerLines[_i2])).split(':');
+                headers[line[0]] = line[1];
+            }
+            return new Frame(command, headers, body);
+        }
+    }, {
         key: 'unmarshallBinary',
         value: function unmarshallBinary(partialData, data) {
-            var arr = new Uint8Array(data);
-            var parsedData = String.fromCharCode.apply(String, _toConsumableArray(arr));
-            var datas = parsedData + parsedData;
-            if (datas === _utils.BYTES.LF) {
+            data = new Uint8Array(data);
+            var datas = partialData ? partialData + new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
+            if (datas.length === 1 && datas[0] === _utils.BYTES.LF_CODE) {
                 return { frames: [{ type: 'heartbeat' }] };
             }
-            console.log(datas);
-            return { frames: [] };
+
+            return {
+                frames: [this.unmarshallBinarySingle(datas)]
+            };
         }
     }, {
         key: 'unmarshall',
-        value: function unmarshall(partialData, data) {
-            if (data instanceof ArrayBuffer) {
+        value: function unmarshall(partialData, data, isBinary) {
+            // if (data instanceof ArrayBuffer) {
+            //     return this.unmarshallBinary(partialData, data)
+            // }
+            if (isBinary) {
                 return this.unmarshallBinary(partialData, data);
             }
+
             var datas = partialData + data;
             return this.unmarshallText(datas);
         }
@@ -376,8 +416,6 @@ var _frame2 = _interopRequireDefault(_frame);
 var _utils = __webpack_require__(0);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -469,28 +507,18 @@ var Client = function () {
             this.connectCallback = connectCallback;
             this.debug('Opening Web Socket...');
             this.ws.onmessage = function (evt) {
-                // let data = evt.data;
-                // if (evt.data instanceof ArrayBuffer) {
-                //     data = typedArrayToUnicodeString(new Uint8Array(evt.data));
-                // }
-                // data = unescape(encodeURIComponent(JSON.stringify(data)));
-                // data = JSON.stringify(JSON.parse(decodeURIComponent(escape(data))));
 
                 _this.serverActivity = Date.now();
-                // heartbeat
-                // if (data === BYTES.LF) {
-                //     this.debug('<<< PONG');
-                //     return;
-                // }
                 if (evt.data instanceof ArrayBuffer) {
-                    // data = typedArrayToUnicodeString(new Uint8Array(evt.data));
-                    _this.debug('<<< ' + String.fromCharCode.apply(String, _toConsumableArray(evt.data)));
+                    _this.debug('<<<', evt.data);
+                } else {
+                    _this.debug('<<< ' + evt.data);
                 }
                 // Handle STOMP frames received from the server
                 // The unmarshall function returns the frames parsed and any remaining
                 // data from partial frames.
                 // debugger
-                var unmarshalledData = _frame2.default.unmarshall(_this.partialData, evt.data);
+                var unmarshalledData = _frame2.default.unmarshall(_this.partialData, evt.data, _this.isBinary);
                 _this.partialData = unmarshalledData.partial;
                 unmarshalledData.frames.forEach(function (frame) {
                     if (frame.type === 'heartbeat') {
@@ -716,7 +744,6 @@ var Client = function () {
         value: function subscribe(destination, callback) {
             var headers = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
-            console.log('subscribe', destination);
             var hdrs = Object.assign({}, headers);
             // for convenience if the `id` header is not set, we create a new one for this client
             // that will be returned to be able to unsubscribe this subscription
@@ -775,6 +802,7 @@ var Client = function () {
     }, {
         key: '_wsSend',
         value: function _wsSend(data) {
+            // console.log('send: ', data)
             if (this.isBinary) data = (0, _utils.unicodeStringToTypedArray)(data);
             this.debug('>>> length ' + data.length);
             // if necessary, split the *STOMP* frame to send it on many smaller
