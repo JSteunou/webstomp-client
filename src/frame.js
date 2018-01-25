@@ -35,7 +35,7 @@ class Frame {
     // Unmarshall a single STOMP frame from a `data` string
     static unmarshallSingle(data) {
         // search for 2 consecutives LF byte to split the command
-        // and headers from the body
+        // and headers from the bodyc
         let divider = data.search(new RegExp(BYTES.LF + BYTES.LF)),
             headerLines = data.substring(0, divider).split(BYTES.LF),
             command = headerLines.shift(),
@@ -101,14 +101,81 @@ class Frame {
     }
 
     static unmarshallBinary(partialData, data) {
-        const arr = new Uint8Array(data)
-        const parsedData = String.fromCharCode(...arr);
-        const datas = parsedData + parsedData
-        if (datas === BYTES.LF) {
+        // debugger
+        // console.log(data)
+        data = new Uint8Array(data)
+        const datas = partialData ? partialData + new Uint8Array([...partialData, ...data]) : data
+        // console.log(datas)
+        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
             return { frames: [{ type: 'heartbeat' }] }
         }
-        console.log(datas)
-        return { frames: [] }
+        // let frames = datas.split(new RegExp(BYTES.NULL + BYTES.LF + '*'))
+
+        let headerBlock;
+        let body;
+
+        for (let i = 0; i < datas.length; i++) {
+            if (datas[i] === BYTES.LF_CODE && datas[i + 1] === BYTES.LF_CODE) {
+                headerBlock = datas.slice(0, i)
+                body = datas.slice(i + 2, datas.length - 1)
+            }
+        }
+
+        let headerLines = []
+        let  divider = 0
+        for (let i = 0; i < headerBlock.length; i++) {
+            if (headerBlock[i] === BYTES.LF_CODE) {
+                headerLines.push(headerBlock.slice(divider, i))
+                divider = i + 1
+            }
+        }
+
+        let command = String.fromCharCode(...headerLines.shift())
+
+        let headers = {}
+        for (let i = 0; i < headerLines.length; i++) {
+            const line = String.fromCharCode(...headerLines[i]).split(':')
+            headers[line[0]] = line[1]
+        }
+
+
+        // console.log('headers: ', headers)
+        // console.log('headers Object: ', headersObj)
+        // console.log('body: ', body)
+            // firstFrames = frames.slice(0, -1),
+            // lastFrame = frames.slice(-1)[0],
+            // r = {
+            //     frames: firstFrames.map(f => Frame.unmarshallSingle(f)),
+            //     partial: ''
+            // };
+        console.log({
+            command,
+            headers,
+            body
+        })
+        let r = {
+            frames: [
+                {
+                    command,
+                    headers,
+                    body
+                }
+            ]
+        }
+        // let r = {
+        //     frames: frames.map(f => Frame.unmarshallSingle(f))
+        // }
+        // If this contains a final full message or just a acknowledgement of a PING
+        // without any other content, process this frame, otherwise return the
+        // contents of the buffer to the caller.
+        // if (lastFrame === BYTES.LF || (lastFrame.search(RegExp(BYTES.NULL + BYTES.LF + '*$'))) !== -1) {
+        //     r.frames.push(Frame.unmarshallSingle(lastFrame));
+        // } else {
+        //     r.partial = lastFrame;
+        // }
+
+        return r;
+        // return { frames }
     }
 
     static unmarshall(partialData, data) {

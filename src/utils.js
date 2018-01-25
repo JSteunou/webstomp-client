@@ -11,8 +11,10 @@ export const VERSIONS = {
 export const BYTES = {
     // LINEFEED byte (octet 10)
     LF: '\x0A',
+    LF_CODE: 10,
     // NULL byte (octet 0)
-    NULL: '\x00'
+    NULL: '\x00',
+    NULL_CODE: 0
 };
 
 // utility function to trim any whitespace before and after a string
