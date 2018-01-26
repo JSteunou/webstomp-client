@@ -101,8 +101,8 @@ class Frame {
     }
 
     static unmarshallBinarySingle(data) {
-        let headerBlock;
-        let body;
+        let headerBlock = new Uint8Array();
+        let body = new Uint8Array();
 
         for (let i = 0; i < data.length; i++) {
             if (data[i] === BYTES.LF_CODE && data[i + 1] === BYTES.LF_CODE) {
