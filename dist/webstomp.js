@@ -322,8 +322,8 @@ var Frame = function () {
     }, {
         key: 'unmarshallBinarySingle',
         value: function unmarshallBinarySingle(data) {
-            var headerBlock = void 0;
-            var body = void 0;
+            var headerBlock = new Uint8Array();
+            var body = new Uint8Array();
 
             for (var i = 0; i < data.length; i++) {
                 if (data[i] === _utils.BYTES.LF_CODE && data[i + 1] === _utils.BYTES.LF_CODE) {
