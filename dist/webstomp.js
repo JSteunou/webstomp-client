@@ -227,7 +227,7 @@ var Frame = function () {
         key: 'unmarshallTextSingle',
         value: function unmarshallTextSingle(data) {
             // search for 2 consecutives LF byte to split the command
-            // and headers from the bodyc
+            // and headers from the body
             var divider = data.search(new RegExp(_utils.BYTES.LF + _utils.BYTES.LF)),
                 headerLines = data.substring(0, divider).split(_utils.BYTES.LF),
                 command = headerLines.shift(),
@@ -282,7 +282,7 @@ var Frame = function () {
             return new Frame(command, headers, body);
         }
 
-        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket text frame*.
         // The data is split when a NULL byte (followed by zero or many LF bytes) is found
 
     }, {
@@ -325,6 +325,8 @@ var Frame = function () {
             var headerBlock = new Uint8Array();
             var body = new Uint8Array();
 
+            // Search for 2 consecutives LF.CODE byte to split the command
+            // and headers from the body
             for (var i = 0; i < data.length; i++) {
                 if (data[i] === _utils.BYTES.LF_CODE && data[i + 1] === _utils.BYTES.LF_CODE) {
                     headerBlock = data.slice(0, i + 1);
@@ -333,6 +335,8 @@ var Frame = function () {
                 }
             }
 
+            // Parse command + headers and splits them by BYTES.LF_CODE
+            // One headerLines element = command or header key and value
             var headerLines = [];
             var divider = 0;
             for (var _i = 0; _i < headerBlock.length; _i++) {
@@ -342,32 +346,95 @@ var Frame = function () {
                 }
             }
 
+            // Pick command from headers
             var command = String.fromCharCode.apply(String, _toConsumableArray(headerLines.shift()));
 
             var headers = {};
+
+            // Parse headerLines and create headers object
             for (var _i2 = 0; _i2 < headerLines.length; _i2++) {
                 var line = String.fromCharCode.apply(String, _toConsumableArray(headerLines[_i2])).split(':');
                 headers[line[0]] = line[1];
             }
             return new Frame(command, headers, body);
         }
+
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket binary frame*.
+        // The data is split when a NULL byte (followed by zero or many LF bytes) is found
+
     }, {
         key: 'unmarshallBinary',
         value: function unmarshallBinary(partialData, data) {
+            var _this2 = this;
+
+            // Split the data before unmarshalling every single STOMP frame.
+            // Web socket servers can send multiple frames in a single websocket message.
+            // If the message size exceeds the websocket message size, then a single
+            // frame can be fragmented across multiple messages.
+            //
+            // `data` data is an ArrayBuffer.
+
             data = new Uint8Array(data);
-            var datas = partialData ? partialData + new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
+            var datas = partialData ? new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
             if (datas.length === 1 && datas[0] === _utils.BYTES.LF_CODE) {
                 return { frames: [{ type: 'heartbeat' }] };
             }
 
+            var lastFrame = new Uint8Array();
+            // let firstFrames = [];
+            // let frameIndexes = []
+            var frames = [];
+            // let lastLFIndex = null;
+            // let lastNullIndex = 0;
+
+            var starts = [0];
+            var ends = [];
+
+            var calcFrameBundryIndexes = function calcFrameBundryIndexes(datas) {
+                var starts = [0];
+                var ends = [];
+
+                for (var i = 0; i < datas.length; i++) {
+                    if (datas[i] === _utils.BYTES.NULL_CODE && i === datas.length - 1) {
+                        ends.push(i);
+                    }
+                    if (datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE && (datas[i - 1] === _utils.BYTES.LF_CODE || datas[i - 1] === _utils.BYTES.NULL_CODE)) {
+                        starts.push(i);
+                    }
+                    // if (i < lastNullIndex && datas[i] === BYTES.LF_CODE && datas[i + 1] !== BYTES.LF_CODE) {
+                    //     lastLFIndex = i
+                    // }
+                    // if (datas[i] === BYTES.LF_CODE && i === lastNullIndex + 1) {
+                    //     frameIndexes.push({ startIndex: lastNullIndex })
+                    // }
+                }
+                return {
+                    starts: starts,
+                    ends: ends
+                };
+            };
+
+            var frameBoundries = calcFrameBundryIndexes(starts, ends, datas);
+
+            for (var i = 0; i < frameBoundries.starts.length; i++) {
+                var singleFrame = void 0;
+                singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.starts[i] - frameBoundries.starts[i]);
+                frames.push(singleFrame);
+            }
+
+            if (frames[frames.length - 1]) {}
+
             return {
-                frames: [this.unmarshallBinarySingle(datas)]
+                frames: frames.map(function (f) {
+                    return _this2.unmarshallBinarySingle(f);
+                }),
+                partial: lastFrame
             };
         }
     }, {
         key: 'unmarshall',
         value: function unmarshall(partialData, data, isBinary) {
-            if (isBinary) {
+            if (isBinary || data instanceof ArrayBuffer) {
                 return this.unmarshallBinary(partialData, data);
             }
 
@@ -514,7 +581,6 @@ var Client = function () {
                 // Handle STOMP frames received from the server
                 // The unmarshall function returns the frames parsed and any remaining
                 // data from partial frames.
-                // debugger
                 var unmarshalledData = _frame2.default.unmarshall(_this.partialData, evt.data, _this.isBinary);
                 _this.partialData = unmarshalledData.partial;
                 unmarshalledData.frames.forEach(function (frame) {
