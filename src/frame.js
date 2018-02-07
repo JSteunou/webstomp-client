@@ -150,33 +150,46 @@ class Frame {
         // `data` data is an ArrayBuffer.
 
         data = new Uint8Array(data)
-        const datas = partialData ? new Uint8Array([...partialData, ...data]) : data
-        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
-            return { frames: [{ type: 'heartbeat' }] }
-        }
-
+        const datas = partialData ? new Uint8Array([...partialData, ...data]) : data;
         let lastFrame = new Uint8Array();
+        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
+            return { frames: [{ type: 'heartbeat' }], partial: lastFrame }
+
+        }
         // let firstFrames = [];
         // let frameIndexes = []
         let frames = [];
         // let lastLFIndex = null;
         // let lastNullIndex = 0;
 
-        let starts = [0]
-        let ends = []
-
-        const calcFrameBundryIndexes = (datas) => {
+        // let starts = [0]
+        // let ends = []
+        debugger
+        const calcFrameBundryIndexes = datas => {
             let starts = [0]
             let ends = []
 
             for (let i = 0; i < datas.length; i++) {
-                if (datas[i] === BYTES.NULL_CODE && i === datas.length - 1) {
+                // if (datas[i] === BYTES.NULL_CODE || (i === datas.length - 1 && datas[i - 1] !== BYTES.NULL_CODE)) {
+                //     if (datas[i + 1] !== BYTES.NULL_CODE && datas[i + 1] !== BYTES.LF_CODE) {
+                //
+                //     }
+                //     ends.push(i)
+                //     debugger
+                // }
+                if (datas[i] === BYTES.NULL_CODE) {
+                    ends.push(i)
+                    // debugger
+                }
+
+                if (i === datas.length - 1) {
                     ends.push(i)
                 }
                 if (
                     datas[i] !== BYTES.NULL_CODE &&
                     datas[i] !== BYTES.LF_CODE &&
-                    (datas[i - 1] === BYTES.LF_CODE || datas[i - 1] === BYTES.NULL_CODE)
+                    (datas[i - 1] === BYTES.NULL_CODE ||
+                     datas[i - 1] === BYTES.LF_CODE && ends.some(index => index < i))
                 ) {
                     starts.push(i)
                 }
@@ -191,21 +204,41 @@ class Frame {
                 starts,
                 ends
             }
-        }
+        };
 
-        let frameBoundries = calcFrameBundryIndexes(starts, ends, datas)
+        let frameBoundries = calcFrameBundryIndexes(datas)
 
         for (let i = 0; i < frameBoundries.starts.length; i++) {
-            let singleFrame;
-            singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.starts[i] - frameBoundries.starts[i])
+            let singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.ends[i] - frameBoundries.starts[i] + 1) // TODO: CHECK!!!!
             frames.push(singleFrame)
         }
+        if (frames[0][0] === BYTES.LF_CODE) {
+            return {
+                frames,
+                partial: lastFrame
+            }
+        }
 
-        if (frames[frames.length - 1]) {}
+        let last = frames[frames.length - 1];
+        if (last[0] === BYTES.LF_CODE || last[0] === BYTES.NULL_CODE) {
+            frames.pop();
+            return {
+                frames: frames.map(f => this.unmarshallBinarySingle(f)),
+                partial: lastFrame
+            }
+        }
 
+        if (last[last.length - 1] === BYTES.NULL_CODE || last[last.length - 1] === BYTES.LF_CODE) {
+            return {
+                frames: frames.map(f => this.unmarshallBinarySingle(f)),
+                partial: lastFrame
+            }
+        }
+
+        frames.pop()
         return {
             frames: frames.map(f => this.unmarshallBinarySingle(f)),
-            partial: lastFrame
+            partial: last
         }
     }
 
