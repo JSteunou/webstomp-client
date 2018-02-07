@@ -87,12 +87,8 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.unicodeStringToTypedArray = unicodeStringToTypedArray;
-exports.typedArrayToUnicodeString = typedArrayToUnicodeString;
 exports.sizeOfUTF8 = sizeOfUTF8;
 exports.createId = createId;
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 var VERSIONS = exports.VERSIONS = {
     V1_0: '1.0',
     V1_1: '1.1',
@@ -134,18 +130,18 @@ function unicodeStringToTypedArray(s) {
     return new Uint8Array(arr);
 }
 
-// from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
-function typedArrayToUnicodeString(ua) {
-    var binstr = String.fromCharCode.apply(String, _toConsumableArray(ua));
-    var escstr = binstr.replace(/(.)/g, function (m, p) {
-        var code = p.charCodeAt(0).toString(16).toUpperCase();
-        if (code.length < 2) {
-            code = '0' + code;
-        }
-        return '%' + code;
-    });
-    return decodeURIComponent(escstr);
-}
+// // from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
+// export function typedArrayToUnicodeString(ua) {
+//     let binstr = String.fromCharCode(...ua);
+//     let escstr = binstr.replace(/(.)/g, function(m, p) {
+//         let code = p.charCodeAt(0).toString(16).toUpperCase();
+//         if (code.length < 2) {
+//             code = '0' + code;
+//         }
+//         return '%' + code;
+//     });
+//     return decodeURIComponent(escstr);
+// }
 
 // Compute the size of a UTF-8 string by counting its number of bytes
 // (and not the number of characters composing the string)
@@ -227,7 +223,7 @@ var Frame = function () {
         key: 'unmarshallTextSingle',
         value: function unmarshallTextSingle(data) {
             // search for 2 consecutives LF byte to split the command
-            // and headers from the bodyc
+            // and headers from the body
             var divider = data.search(new RegExp(_utils.BYTES.LF + _utils.BYTES.LF)),
                 headerLines = data.substring(0, divider).split(_utils.BYTES.LF),
                 command = headerLines.shift(),
@@ -282,7 +278,7 @@ var Frame = function () {
             return new Frame(command, headers, body);
         }
 
-        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket text frame*.
         // The data is split when a NULL byte (followed by zero or many LF bytes) is found
 
     }, {
@@ -322,9 +318,11 @@ var Frame = function () {
     }, {
         key: 'unmarshallBinarySingle',
         value: function unmarshallBinarySingle(data) {
-            var headerBlock = new Uint8Array();
-            var body = new Uint8Array();
+            var headerBlock = new Uint8Array([]);
+            var body = new Uint8Array([]);
 
+            // Search for 2 consecutives LF.CODE byte to split the command
+            // and headers from the body
             for (var i = 0; i < data.length; i++) {
                 if (data[i] === _utils.BYTES.LF_CODE && data[i + 1] === _utils.BYTES.LF_CODE) {
                     headerBlock = data.slice(0, i + 1);
@@ -333,6 +331,8 @@ var Frame = function () {
                 }
             }
 
+            // Parse command + headers and splits them by BYTES.LF_CODE
+            // One headerLines element = command or header key and value
             var headerLines = [];
             var divider = 0;
             for (var _i = 0; _i < headerBlock.length; _i++) {
@@ -342,32 +342,111 @@ var Frame = function () {
                 }
             }
 
+            // Pick command from headers
             var command = String.fromCharCode.apply(String, _toConsumableArray(headerLines.shift()));
 
             var headers = {};
+
+            // Parse headerLines and create headers object
             for (var _i2 = 0; _i2 < headerLines.length; _i2++) {
                 var line = String.fromCharCode.apply(String, _toConsumableArray(headerLines[_i2])).split(':');
                 headers[line[0]] = line[1];
             }
             return new Frame(command, headers, body);
         }
+
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket binary frame*.
+        // The data is split when a NULL byte (followed by zero or many LF bytes) is found
+
     }, {
         key: 'unmarshallBinary',
         value: function unmarshallBinary(partialData, data) {
+            var _this2 = this;
+
+            // Split the data before unmarshalling every single STOMP frame.
+            // Web socket servers can send multiple frames in a single websocket message.
+            // If the message size exceeds the websocket message size, then a single
+            // frame can be fragmented across multiple messages.
+            //
+            // `data` data is an ArrayBuffer.
+
+            // Determinate start and end indexes of Stopm frames
+            var calcFrameBundryIndexes = function calcFrameBundryIndexes(datas) {
+                var starts = [0];
+                var ends = [];
+
+                for (var i = 0; i < datas.length; i++) {
+                    if (datas[i] === _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE) {
+                        ends.push(i);
+                    }
+
+                    if (i === datas.length - 1) {
+                        ends.push(i);
+                    }
+                    if (datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE && (datas[i - 1] === _utils.BYTES.NULL_CODE || datas[i - 1] === _utils.BYTES.LF_CODE) && i < ends[ends.length - 1]) {
+                        starts.push(i);
+                    }
+                }
+                return {
+                    starts: starts,
+                    ends: ends
+                };
+            };
+
             data = new Uint8Array(data);
-            var datas = partialData ? partialData + new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
+            partialData = new Uint8Array(partialData);
+
+            var datas = partialData.length ? new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
+            var lastFrame = new Uint8Array([]);
             if (datas.length === 1 && datas[0] === _utils.BYTES.LF_CODE) {
-                return { frames: [{ type: 'heartbeat' }] };
+                return { frames: [{ type: 'heartbeat' }], partial: lastFrame };
+            }
+            var frames = [];
+
+            var frameBoundries = calcFrameBundryIndexes(datas);
+
+            for (var i = 0; i < frameBoundries.starts.length; i++) {
+                var singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.ends[i] - frameBoundries.starts[i]);
+                frames.push(singleFrame);
+            }
+            if (frames[0][0] === _utils.BYTES.LF_CODE) {
+                return {
+                    frames: frames,
+                    partial: lastFrame
+                };
+            }
+
+            var last = frames[frames.length - 1];
+            if (last[0] === _utils.BYTES.LF_CODE || last[0] === _utils.BYTES.NULL_CODE) {
+                frames.pop();
+                return {
+                    frames: frames.map(function (f) {
+                        return _this2.unmarshallBinarySingle(f);
+                    }),
+                    partial: lastFrame
+                };
+            }
+
+            if (last[last.length - 1] === _utils.BYTES.NULL_CODE || last[last.length - 1] === _utils.BYTES.LF_CODE) {
+                return {
+                    frames: frames.map(function (f) {
+                        return _this2.unmarshallBinarySingle(f);
+                    }),
+                    partial: lastFrame
+                };
             }
 
             return {
-                frames: [this.unmarshallBinarySingle(datas)]
+                frames: frames.map(function (f) {
+                    return _this2.unmarshallBinarySingle(f);
+                }),
+                partial: last
             };
         }
     }, {
         key: 'unmarshall',
         value: function unmarshall(partialData, data, isBinary) {
-            if (isBinary) {
+            if (isBinary || data instanceof ArrayBuffer) {
                 return this.unmarshallBinary(partialData, data);
             }
 
@@ -514,7 +593,6 @@ var Client = function () {
                 // Handle STOMP frames received from the server
                 // The unmarshall function returns the frames parsed and any remaining
                 // data from partial frames.
-                // debugger
                 var unmarshalledData = _frame2.default.unmarshall(_this.partialData, evt.data, _this.isBinary);
                 _this.partialData = unmarshalledData.partial;
                 unmarshalledData.frames.forEach(function (frame) {
