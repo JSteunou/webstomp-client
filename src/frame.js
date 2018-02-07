@@ -101,39 +101,38 @@ class Frame {
     }
 
     static unmarshallBinarySingle(data) {
-        let headerBlock = new Uint8Array();
-        let body = new Uint8Array();
-
+        let headerBlock = new Uint8Array([]);
+        let body = new Uint8Array([]);
 
         // Search for 2 consecutives LF.CODE byte to split the command
         // and headers from the body
         for (let i = 0; i < data.length; i++) {
             if (data[i] === BYTES.LF_CODE && data[i + 1] === BYTES.LF_CODE) {
-                headerBlock = data.slice(0, i + 1)
-                body = data.slice(i + 2, data.length - 1)
+                headerBlock = data.slice(0, i + 1);
+                body = data.slice(i + 2, data.length - 1);
                 break
             }
         }
 
         // Parse command + headers and splits them by BYTES.LF_CODE
         // One headerLines element = command or header key and value
-        let headerLines = []
-        let divider = 0
+        let headerLines = [];
+        let divider = 0;
         for (let i = 0; i < headerBlock.length; i++) {
             if (headerBlock[i] === BYTES.LF_CODE) {
-                headerLines.push(headerBlock.slice(divider, i))
+                headerLines.push(headerBlock.slice(divider, i));
                 divider = i + 1
             }
         }
 
         // Pick command from headers
-        let command = String.fromCharCode(...headerLines.shift())
+        let command = String.fromCharCode(...headerLines.shift());
 
-        let headers = {}
+        let headers = {};
 
         // Parse headerLines and create headers object
         for (let i = 0; i < headerLines.length; i++) {
-            const line = String.fromCharCode(...headerLines[i]).split(':')
+            const line = String.fromCharCode(...headerLines[i]).split(':');
             headers[line[0]] = line[1]
         }
         return new Frame(command, headers, body);
@@ -149,37 +148,14 @@ class Frame {
         //
         // `data` data is an ArrayBuffer.
 
-        data = new Uint8Array(data)
-        const datas = partialData ? new Uint8Array([...partialData, ...data]) : data;
-        let lastFrame = new Uint8Array();
-        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
-            return { frames: [{ type: 'heartbeat' }], partial: lastFrame }
-
-        }
-        // let firstFrames = [];
-        // let frameIndexes = []
-        let frames = [];
-        // let lastLFIndex = null;
-        // let lastNullIndex = 0;
-
-        // let starts = [0]
-        // let ends = []
-        debugger
+        // Determinate start and end indexes of Stopm frames
         const calcFrameBundryIndexes = datas => {
-            let starts = [0]
-            let ends = []
+            let starts = [0];
+            let ends = [];
 
             for (let i = 0; i < datas.length; i++) {
-                // if (datas[i] === BYTES.NULL_CODE || (i === datas.length - 1 && datas[i - 1] !== BYTES.NULL_CODE)) {
-                //     if (datas[i + 1] !== BYTES.NULL_CODE && datas[i + 1] !== BYTES.LF_CODE) {
-                //
-                //     }
-                //     ends.push(i)
-                //     debugger
-                // }
-                if (datas[i] === BYTES.NULL_CODE) {
+                if (datas[i] === BYTES.NULL_CODE && datas[i] !== BYTES.NULL_CODE && datas[i] !== BYTES.LF_CODE) {
                     ends.push(i)
-                    // debugger
                 }
 
                 if (i === datas.length - 1) {
@@ -188,17 +164,11 @@ class Frame {
                 if (
                     datas[i] !== BYTES.NULL_CODE &&
                     datas[i] !== BYTES.LF_CODE &&
-                    (datas[i - 1] === BYTES.NULL_CODE ||
-                     datas[i - 1] === BYTES.LF_CODE && ends.some(index => index < i))
+                    (datas[i - 1] === BYTES.NULL_CODE || datas[i - 1] === BYTES.LF_CODE) &&
+                    i < ends[ends.length - 1]
                 ) {
                     starts.push(i)
                 }
-                // if (i < lastNullIndex && datas[i] === BYTES.LF_CODE && datas[i + 1] !== BYTES.LF_CODE) {
-                //     lastLFIndex = i
-                // }
-                // if (datas[i] === BYTES.LF_CODE && i === lastNullIndex + 1) {
-                //     frameIndexes.push({ startIndex: lastNullIndex })
-                // }
             }
             return {
                 starts,
@@ -206,10 +176,21 @@ class Frame {
             }
         };
 
-        let frameBoundries = calcFrameBundryIndexes(datas)
+        data = new Uint8Array(data);
+        partialData = new Uint8Array(partialData);
+
+        const datas = partialData.length ? new Uint8Array([...partialData, ...data]) : data;
+        let lastFrame = new Uint8Array([]);
+        if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
+            return { frames: [{ type: 'heartbeat' }], partial: lastFrame }
+
+        }
+        let frames = [];
+
+        let frameBoundries = calcFrameBundryIndexes(datas);
 
         for (let i = 0; i < frameBoundries.starts.length; i++) {
-            let singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.ends[i] - frameBoundries.starts[i] + 1) // TODO: CHECK!!!!
+            let singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.ends[i] - frameBoundries.starts[i]);
             frames.push(singleFrame)
         }
         if (frames[0][0] === BYTES.LF_CODE) {
@@ -235,7 +216,6 @@ class Frame {
             }
         }
 
-        frames.pop()
         return {
             frames: frames.map(f => this.unmarshallBinarySingle(f)),
             partial: last
@@ -247,7 +227,7 @@ class Frame {
             return this.unmarshallBinary(partialData, data)
         }
 
-        const datas = partialData + data
+        const datas = partialData + data;
         return this.unmarshallText(datas)
     }
 

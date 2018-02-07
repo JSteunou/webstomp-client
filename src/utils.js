@@ -29,18 +29,18 @@ export function unicodeStringToTypedArray(s) {
     return new Uint8Array(arr);
 }
 
-// from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
-export function typedArrayToUnicodeString(ua) {
-    let binstr = String.fromCharCode(...ua);
-    let escstr = binstr.replace(/(.)/g, function(m, p) {
-        let code = p.charCodeAt(0).toString(16).toUpperCase();
-        if (code.length < 2) {
-            code = '0' + code;
-        }
-        return '%' + code;
-    });
-    return decodeURIComponent(escstr);
-}
+// // from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
+// export function typedArrayToUnicodeString(ua) {
+//     let binstr = String.fromCharCode(...ua);
+//     let escstr = binstr.replace(/(.)/g, function(m, p) {
+//         let code = p.charCodeAt(0).toString(16).toUpperCase();
+//         if (code.length < 2) {
+//             code = '0' + code;
+//         }
+//         return '%' + code;
+//     });
+//     return decodeURIComponent(escstr);
+// }
 
 // Compute the size of a UTF-8 string by counting its number of bytes
 // (and not the number of characters composing the string)

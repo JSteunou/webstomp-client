@@ -87,12 +87,8 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.unicodeStringToTypedArray = unicodeStringToTypedArray;
-exports.typedArrayToUnicodeString = typedArrayToUnicodeString;
 exports.sizeOfUTF8 = sizeOfUTF8;
 exports.createId = createId;
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 var VERSIONS = exports.VERSIONS = {
     V1_0: '1.0',
     V1_1: '1.1',
@@ -134,18 +130,18 @@ function unicodeStringToTypedArray(s) {
     return new Uint8Array(arr);
 }
 
-// from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
-function typedArrayToUnicodeString(ua) {
-    var binstr = String.fromCharCode.apply(String, _toConsumableArray(ua));
-    var escstr = binstr.replace(/(.)/g, function (m, p) {
-        var code = p.charCodeAt(0).toString(16).toUpperCase();
-        if (code.length < 2) {
-            code = '0' + code;
-        }
-        return '%' + code;
-    });
-    return decodeURIComponent(escstr);
-}
+// // from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
+// export function typedArrayToUnicodeString(ua) {
+//     let binstr = String.fromCharCode(...ua);
+//     let escstr = binstr.replace(/(.)/g, function(m, p) {
+//         let code = p.charCodeAt(0).toString(16).toUpperCase();
+//         if (code.length < 2) {
+//             code = '0' + code;
+//         }
+//         return '%' + code;
+//     });
+//     return decodeURIComponent(escstr);
+// }
 
 // Compute the size of a UTF-8 string by counting its number of bytes
 // (and not the number of characters composing the string)
@@ -322,8 +318,8 @@ var Frame = function () {
     }, {
         key: 'unmarshallBinarySingle',
         value: function unmarshallBinarySingle(data) {
-            var headerBlock = new Uint8Array();
-            var body = new Uint8Array();
+            var headerBlock = new Uint8Array([]);
+            var body = new Uint8Array([]);
 
             // Search for 2 consecutives LF.CODE byte to split the command
             // and headers from the body
@@ -374,39 +370,22 @@ var Frame = function () {
             //
             // `data` data is an ArrayBuffer.
 
-            data = new Uint8Array(data);
-            var datas = partialData ? new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
-            if (datas.length === 1 && datas[0] === _utils.BYTES.LF_CODE) {
-                return { frames: [{ type: 'heartbeat' }] };
-            }
-
-            var lastFrame = new Uint8Array();
-            // let firstFrames = [];
-            // let frameIndexes = []
-            var frames = [];
-            // let lastLFIndex = null;
-            // let lastNullIndex = 0;
-
-            var starts = [0];
-            var ends = [];
-
+            // Determinate start and end indexes of Stopm frames
             var calcFrameBundryIndexes = function calcFrameBundryIndexes(datas) {
                 var starts = [0];
                 var ends = [];
 
                 for (var i = 0; i < datas.length; i++) {
-                    if (datas[i] === _utils.BYTES.NULL_CODE && i === datas.length - 1) {
+                    if (datas[i] === _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE) {
                         ends.push(i);
                     }
-                    if (datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE && (datas[i - 1] === _utils.BYTES.LF_CODE || datas[i - 1] === _utils.BYTES.NULL_CODE)) {
+
+                    if (i === datas.length - 1) {
+                        ends.push(i);
+                    }
+                    if (datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE && (datas[i - 1] === _utils.BYTES.NULL_CODE || datas[i - 1] === _utils.BYTES.LF_CODE) && i < ends[ends.length - 1]) {
                         starts.push(i);
                     }
-                    // if (i < lastNullIndex && datas[i] === BYTES.LF_CODE && datas[i + 1] !== BYTES.LF_CODE) {
-                    //     lastLFIndex = i
-                    // }
-                    // if (datas[i] === BYTES.LF_CODE && i === lastNullIndex + 1) {
-                    //     frameIndexes.push({ startIndex: lastNullIndex })
-                    // }
                 }
                 return {
                     starts: starts,
@@ -414,21 +393,54 @@ var Frame = function () {
                 };
             };
 
-            var frameBoundries = calcFrameBundryIndexes(starts, ends, datas);
+            data = new Uint8Array(data);
+            partialData = new Uint8Array(partialData);
+
+            var datas = partialData.length ? new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
+            var lastFrame = new Uint8Array([]);
+            if (datas.length === 1 && datas[0] === _utils.BYTES.LF_CODE) {
+                return { frames: [{ type: 'heartbeat' }], partial: lastFrame };
+            }
+            var frames = [];
+
+            var frameBoundries = calcFrameBundryIndexes(datas);
 
             for (var i = 0; i < frameBoundries.starts.length; i++) {
-                var singleFrame = void 0;
-                singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.starts[i] - frameBoundries.starts[i]);
+                var singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.ends[i] - frameBoundries.starts[i]);
                 frames.push(singleFrame);
             }
+            if (frames[0][0] === _utils.BYTES.LF_CODE) {
+                return {
+                    frames: frames,
+                    partial: lastFrame
+                };
+            }
 
-            if (frames[frames.length - 1]) {}
+            var last = frames[frames.length - 1];
+            if (last[0] === _utils.BYTES.LF_CODE || last[0] === _utils.BYTES.NULL_CODE) {
+                frames.pop();
+                return {
+                    frames: frames.map(function (f) {
+                        return _this2.unmarshallBinarySingle(f);
+                    }),
+                    partial: lastFrame
+                };
+            }
+
+            if (last[last.length - 1] === _utils.BYTES.NULL_CODE || last[last.length - 1] === _utils.BYTES.LF_CODE) {
+                return {
+                    frames: frames.map(function (f) {
+                        return _this2.unmarshallBinarySingle(f);
+                    }),
+                    partial: lastFrame
+                };
+            }
 
             return {
                 frames: frames.map(function (f) {
                     return _this2.unmarshallBinarySingle(f);
                 }),
-                partial: lastFrame
+                partial: last
             };
         }
     }, {
