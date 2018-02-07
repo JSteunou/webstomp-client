@@ -74,6 +74,7 @@ class Client {
             // Handle STOMP frames received from the server
             // The unmarshall function returns the frames parsed and any remaining
             // data from partial frames.
+            // debugger
             const unmarshalledData = Frame.unmarshall(this.partialData, evt.data, this.isBinary);
             this.partialData = unmarshalledData.partial;
             unmarshalledData.frames.forEach(frame => {

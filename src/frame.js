@@ -35,7 +35,7 @@ class Frame {
     // Unmarshall a single STOMP frame from a `data` string
     static unmarshallTextSingle(data) {
         // search for 2 consecutives LF byte to split the command
-        // and headers from the body
+        // and headers from the bodyc
         let divider = data.search(new RegExp(BYTES.LF + BYTES.LF)),
             headerLines = data.substring(0, divider).split(BYTES.LF),
             command = headerLines.shift(),
@@ -67,7 +67,7 @@ class Frame {
         return new Frame(command, headers, body);
     }
 
-    // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket text frame*.
+    // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
     // The data is split when a NULL byte (followed by zero or many LF bytes) is found
     static unmarshallText(data) {
         // Split the data before unmarshalling every single STOMP frame.
@@ -104,9 +104,6 @@ class Frame {
         let headerBlock = new Uint8Array();
         let body = new Uint8Array();
 
-
-        // Search for 2 consecutives LF.CODE byte to split the command
-        // and headers from the body
         for (let i = 0; i < data.length; i++) {
             if (data[i] === BYTES.LF_CODE && data[i + 1] === BYTES.LF_CODE) {
                 headerBlock = data.slice(0, i + 1)
@@ -115,8 +112,6 @@ class Frame {
             }
         }
 
-        // Parse command + headers and splits them by BYTES.LF_CODE
-        // One headerLines element = command or header key and value
         let headerLines = []
         let divider = 0
         for (let i = 0; i < headerBlock.length; i++) {
@@ -126,12 +121,9 @@ class Frame {
             }
         }
 
-        // Pick command from headers
         let command = String.fromCharCode(...headerLines.shift())
 
         let headers = {}
-
-        // Parse headerLines and create headers object
         for (let i = 0; i < headerLines.length; i++) {
             const line = String.fromCharCode(...headerLines[i]).split(':')
             headers[line[0]] = line[1]
@@ -139,78 +131,20 @@ class Frame {
         return new Frame(command, headers, body);
     }
 
-    // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket binary frame*.
-    // The data is split when a NULL byte (followed by zero or many LF bytes) is found
     static unmarshallBinary(partialData, data) {
-        // Split the data before unmarshalling every single STOMP frame.
-        // Web socket servers can send multiple frames in a single websocket message.
-        // If the message size exceeds the websocket message size, then a single
-        // frame can be fragmented across multiple messages.
-        //
-        // `data` data is an ArrayBuffer.
-
         data = new Uint8Array(data)
-        const datas = partialData ? new Uint8Array([...partialData, ...data]) : data
+        const datas = partialData ? partialData + new Uint8Array([...partialData, ...data]) : data
         if (datas.length === 1 && datas[0] === BYTES.LF_CODE) {
             return { frames: [{ type: 'heartbeat' }] }
         }
 
-        let lastFrame = new Uint8Array();
-        // let firstFrames = [];
-        // let frameIndexes = []
-        let frames = [];
-        // let lastLFIndex = null;
-        // let lastNullIndex = 0;
-
-        let starts = [0]
-        let ends = []
-
-        const calcFrameBundryIndexes = (datas) => {
-            let starts = [0]
-            let ends = []
-
-            for (let i = 0; i < datas.length; i++) {
-                if (datas[i] === BYTES.NULL_CODE && i === datas.length - 1) {
-                    ends.push(i)
-                }
-                if (
-                    datas[i] !== BYTES.NULL_CODE &&
-                    datas[i] !== BYTES.LF_CODE &&
-                    (datas[i - 1] === BYTES.LF_CODE || datas[i - 1] === BYTES.NULL_CODE)
-                ) {
-                    starts.push(i)
-                }
-                // if (i < lastNullIndex && datas[i] === BYTES.LF_CODE && datas[i + 1] !== BYTES.LF_CODE) {
-                //     lastLFIndex = i
-                // }
-                // if (datas[i] === BYTES.LF_CODE && i === lastNullIndex + 1) {
-                //     frameIndexes.push({ startIndex: lastNullIndex })
-                // }
-            }
-            return {
-                starts,
-                ends
-            }
-        }
-
-        let frameBoundries = calcFrameBundryIndexes(starts, ends, datas)
-
-        for (let i = 0; i < frameBoundries.starts.length; i++) {
-            let singleFrame;
-            singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.starts[i] - frameBoundries.starts[i])
-            frames.push(singleFrame)
-        }
-
-        if (frames[frames.length - 1]) {}
-
         return {
-            frames: frames.map(f => this.unmarshallBinarySingle(f)),
-            partial: lastFrame
+            frames: [this.unmarshallBinarySingle(datas)]
         }
     }
 
     static unmarshall(partialData, data, isBinary) {
-        if (isBinary || data instanceof ArrayBuffer) {
+        if (isBinary) {
             return this.unmarshallBinary(partialData, data)
         }
 
