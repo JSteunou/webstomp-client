@@ -127,6 +127,36 @@ subscription.unsubscribe(headers);
 
 `headers` are optionals
 
+#### client.onreceive()
+
+This function will be called whenever a message is received, even in the absence of an explicit `subscribe()`. Some brokers (at least RabbitMQ) will setup an internal routing topology for RPC patterns when a message is sent with certain headers. 
+
+In RabbitMQ it's called [Direct Reply-To](https://www.rabbitmq.com/direct-reply-to.html)
+
+*On the client*
+```
+let onreceive(frame)=>{
+        console.log('Message received',frame)
+}
+
+client.onreceive=onreceive
+
+let headers = {
+        'reply-to'  :'/temp-queue/webstomp',
+}
+
+client.send('/topic/public.echo.hi.mom','a message')
+
+```
+
+*On the server (using [Amqplib](http://www.squaremobius.net/amqp.node/channel_api.html#channel_publish) for example)*
+
+```
+ch.publish('',raw_message.properties.replyTo,Buffer.from('a reply'))
+
+```
+
+
 #### begin([transaction])
 
 If no transaction ID is passed, one will be created automatically
