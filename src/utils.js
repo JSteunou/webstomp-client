@@ -7,6 +7,20 @@ export const VERSIONS = {
     supportedProtocols: () => ['v10.stomp', 'v11.stomp', 'v12.stomp']
 };
 
+export const PROTOCOLS_VERSIONS = {
+    'v10.stomp': VERSIONS.V1_0,
+    'v11.stomp': VERSIONS.V1_1,
+    'v12.stomp': VERSIONS.V1_2
+};
+
+export function getSupportedVersions(protocol) {
+    const knownVersion = PROTOCOLS_VERSIONS[protocol];
+    if (!knownVersion) {
+        console.warn(`DEPRECATED: ${protocol} is not a recognized STOMP version. In next major client version, this will close the connection.`);
+    }
+    return knownVersion || VERSIONS.supportedVersions();
+}
+
 // Define constants for bytes used throughout the code.
 export const BYTES = {
     // LINEFEED byte (octet 10)

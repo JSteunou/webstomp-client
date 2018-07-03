@@ -1,5 +1,5 @@
 import Frame from './frame';
-import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray, createId} from './utils';
+import {VERSIONS, BYTES, getSupportedVersions, typedArrayToUnicodeString, unicodeStringToTypedArray, createId} from './utils';
 
 // STOMP Client Class
 //
@@ -145,7 +145,7 @@ class Client {
         };
         this.ws.onopen = () => {
             this.debug('Web Socket Opened...');
-            headers['accept-version'] = VERSIONS.supportedVersions();
+            headers['accept-version'] = getSupportedVersions(this.ws.protocol);
             // Check if we already have heart-beat in headers before adding them
             if (!headers['heart-beat']) {
                 headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
