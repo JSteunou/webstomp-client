@@ -1,3 +1,9 @@
+# 1.2.1 - 03 Jul. 2018
+
+* Fix: possible race condition with client#onopen callback
+* Some doc
+
+
 # 1.2.0 - 10 Oct. 2017
 
 * Change: Add data object as 2nd parameter for debug #55
