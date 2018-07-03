@@ -189,7 +189,7 @@ It is possible to use binary frame instead of string frame over Web Sockets.
 * client side: set the binary option to true.
 * server side: use a compatible websocket server, like with [RabbitMQ Web-Stomp](https://www.rabbitmq.com/web-stomp.html) since 3.6
 
-## Hearbeat
+## Heartbeat
 
 Not all server are compatible, you may have to deactivate this feature depending the server you are using. For example RabbitMQ Web-Stomp is compatible only since 3.6 with native Web Sockets server.
 
