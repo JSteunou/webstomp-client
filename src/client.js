@@ -152,6 +152,9 @@ class Client {
             }
             this._transmit('CONNECT', headers);
         };
+        if (this.ws.readyState === this.ws.OPEN) {
+            this.ws.onopen();
+        }
     }
 
     // [DISCONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#DISCONNECT)
