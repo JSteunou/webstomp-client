@@ -1,3 +1,8 @@
+# 1.2.2 - 03 Jul. 2018
+
+* Fix STOMP CONNECT frame 'accept-version' to match websocket accepted protocol #66
+
+
 # 1.2.1 - 03 Jul. 2018
 
 * Fix: possible race condition with client#onopen callback
