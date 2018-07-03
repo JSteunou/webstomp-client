@@ -127,9 +127,9 @@ subscription.unsubscribe(headers);
 
 `headers` are optionals
 
-#### client.onreceive()
+#### onreceive(frame)
 
-This function will be called whenever a message is received, even in the absence of an explicit `subscribe()`. Some brokers (at least RabbitMQ) will setup an internal routing topology for RPC patterns when a message is sent with certain headers. 
+If defined on the client instance this function will be called whenever a message is received and in the absence of an explicit `subscribe()`. Some brokers (at least RabbitMQ) will setup an internal routing topology for RPC patterns when a message is sent with certain headers. 
 
 In RabbitMQ it's called [Direct Reply-To](https://www.rabbitmq.com/direct-reply-to.html)
 
