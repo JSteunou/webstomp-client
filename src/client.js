@@ -143,7 +143,7 @@ class Client {
             this._cleanUp();
             if (errorCallback) errorCallback(event);
         };
-        this.ws.onopen = () => {
+        const wsOpen = () => {
             this.debug('Web Socket Opened...');
             headers['accept-version'] = VERSIONS.supportedVersions();
             // Check if we already have heart-beat in headers before adding them
@@ -152,6 +152,10 @@ class Client {
             }
             this._transmit('CONNECT', headers);
         };
+        if (this.ws.readyState = this.ws.OPEN) {
+            wsOpen.call(this);
+        }
+        this.ws.onopen = wsOpen
     }
 
     // [DISCONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#DISCONNECT)
