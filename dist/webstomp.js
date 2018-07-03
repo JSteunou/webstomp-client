@@ -86,6 +86,7 @@ return /******/ (function(modules) { // webpackBootstrap
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.getSupportedVersions = getSupportedVersions;
 exports.unicodeStringToTypedArray = unicodeStringToTypedArray;
 exports.typedArrayToUnicodeString = typedArrayToUnicodeString;
 exports.sizeOfUTF8 = sizeOfUTF8;
@@ -105,6 +106,20 @@ var VERSIONS = exports.VERSIONS = {
         return ['v10.stomp', 'v11.stomp', 'v12.stomp'];
     }
 };
+
+var PROTOCOLS_VERSIONS = exports.PROTOCOLS_VERSIONS = {
+    'v10.stomp': VERSIONS.V1_0,
+    'v11.stomp': VERSIONS.V1_1,
+    'v12.stomp': VERSIONS.V1_2
+};
+
+function getSupportedVersions(protocol) {
+    var knownVersion = PROTOCOLS_VERSIONS[protocol];
+    if (!knownVersion) {
+        console.warn('DEPRECATED: ' + protocol + ' is not a recognized STOMP version. In next major client version, this will close the connection.');
+    }
+    return knownVersion || VERSIONS.supportedVersions();
+}
 
 // Define constants for bytes used throughout the code.
 var BYTES = exports.BYTES = {
@@ -521,7 +536,7 @@ var Client = function () {
             };
             this.ws.onopen = function () {
                 _this.debug('Web Socket Opened...');
-                headers['accept-version'] = _utils.VERSIONS.supportedVersions();
+                headers['accept-version'] = (0, _utils.getSupportedVersions)(_this.ws.protocol);
                 // Check if we already have heart-beat in headers before adding them
                 if (!headers['heart-beat']) {
                     headers['heart-beat'] = [_this.heartbeat.outgoing, _this.heartbeat.incoming].join(',');
