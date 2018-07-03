@@ -87,12 +87,8 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.unicodeStringToTypedArray = unicodeStringToTypedArray;
-exports.typedArrayToUnicodeString = typedArrayToUnicodeString;
 exports.sizeOfUTF8 = sizeOfUTF8;
 exports.createId = createId;
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 var VERSIONS = exports.VERSIONS = {
     V1_0: '1.0',
     V1_1: '1.1',
@@ -110,8 +106,10 @@ var VERSIONS = exports.VERSIONS = {
 var BYTES = exports.BYTES = {
     // LINEFEED byte (octet 10)
     LF: '\x0A',
+    LF_CODE: 10,
     // NULL byte (octet 0)
-    NULL: '\x00'
+    NULL: '\x00',
+    NULL_CODE: 0
 };
 
 // utility function to trim any whitespace before and after a string
@@ -128,21 +126,22 @@ function unicodeStringToTypedArray(s) {
     var arr = Array.prototype.map.call(binstr, function (c) {
         return c.charCodeAt(0);
     });
+    // debugger
     return new Uint8Array(arr);
 }
 
-// from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
-function typedArrayToUnicodeString(ua) {
-    var binstr = String.fromCharCode.apply(String, _toConsumableArray(ua));
-    var escstr = binstr.replace(/(.)/g, function (m, p) {
-        var code = p.charCodeAt(0).toString(16).toUpperCase();
-        if (code.length < 2) {
-            code = '0' + code;
-        }
-        return '%' + code;
-    });
-    return decodeURIComponent(escstr);
-}
+// // from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
+// export function typedArrayToUnicodeString(ua) {
+//     let binstr = String.fromCharCode(...ua);
+//     let escstr = binstr.replace(/(.)/g, function(m, p) {
+//         let code = p.charCodeAt(0).toString(16).toUpperCase();
+//         if (code.length < 2) {
+//             code = '0' + code;
+//         }
+//         return '%' + code;
+//     });
+//     return decodeURIComponent(escstr);
+// }
 
 // Compute the size of a UTF-8 string by counting its number of bytes
 // (and not the number of characters composing the string)
@@ -168,11 +167,325 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _utils = __webpack_require__(0);
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// [STOMP Frame](http://stomp.github.com/stomp-specification-1.1.html#STOMP_Frames) Class
+var Frame = function () {
+
+    // Frame constructor
+    function Frame(command) {
+        var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+        var body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+
+        _classCallCheck(this, Frame);
+
+        this.command = command;
+        this.headers = headers;
+        this.body = body;
+    }
+
+    // Provides a textual representation of the frame
+    // suitable to be sent to the server
+
+
+    _createClass(Frame, [{
+        key: 'toString',
+        value: function toString() {
+            var _this = this;
+
+            var lines = [this.command],
+                skipContentLength = this.headers['content-length'] === false;
+            if (skipContentLength) delete this.headers['content-length'];
+
+            Object.keys(this.headers).forEach(function (name) {
+                var value = _this.headers[name];
+                lines.push(name + ':' + value);
+            });
+
+            if (this.body && !skipContentLength) {
+                lines.push('content-length:' + (0, _utils.sizeOfUTF8)(this.body));
+            }
+
+            lines.push(_utils.BYTES.LF + this.body);
+
+            return lines.join(_utils.BYTES.LF);
+        }
+
+        // Unmarshall a single STOMP frame from a `data` string
+
+    }], [{
+        key: 'unmarshallTextSingle',
+        value: function unmarshallTextSingle(data) {
+            // search for 2 consecutives LF byte to split the command
+            // and headers from the body
+            var divider = data.search(new RegExp(_utils.BYTES.LF + _utils.BYTES.LF)),
+                headerLines = data.substring(0, divider).split(_utils.BYTES.LF),
+                command = headerLines.shift(),
+                headers = {},
+                body = '',
+
+            // skip the 2 LF bytes that divides the headers from the body
+            bodyIndex = divider + 2;
+
+            // Parse headers in reverse order so that for repeated headers, the 1st
+            // value is used
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = headerLines.reverse()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var line = _step.value;
+
+                    var idx = line.indexOf(':');
+                    headers[(0, _utils.trim)(line.substring(0, idx))] = (0, _utils.trim)(line.substring(idx + 1));
+                }
+                // Parse body
+                // check for content-length or topping at the first NULL byte found.
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            if (headers['content-length']) {
+                var len = parseInt(headers['content-length'], 10);
+                body = ('' + data).substring(bodyIndex, bodyIndex + len);
+            } else {
+                var chr = null;
+                for (var i = bodyIndex; i < data.length; i++) {
+                    chr = data.charAt(i);
+                    if (chr === _utils.BYTES.NULL) break;
+                    body += chr;
+                }
+            }
+
+            return new Frame(command, headers, body);
+        }
+
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket text frame*.
+        // The data is split when a NULL byte (followed by zero or many LF bytes) is found
+
+    }, {
+        key: 'unmarshallText',
+        value: function unmarshallText(data) {
+            // Split the data before unmarshalling every single STOMP frame.
+            // Web socket servers can send multiple frames in a single websocket message.
+            // If the message size exceeds the websocket message size, then a single
+            // frame can be fragmented across multiple messages.
+            //
+            // `data` is a string.
+
+            if (data === _utils.BYTES.LF) {
+                return { frames: [{ type: 'heartbeat' }] };
+            }
+            var frames = data.split(new RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*')),
+                firstFrames = frames.slice(0, -1),
+                lastFrame = frames.slice(-1)[0],
+                r = {
+                frames: firstFrames.map(function (f) {
+                    return Frame.unmarshallSingle(f);
+                }),
+                partial: ''
+            };
+
+            // If this contains a final full message or just a acknowledgement of a PING
+            // without any other content, process this frame, otherwise return the
+            // contents of the buffer to the caller.
+            if (lastFrame === _utils.BYTES.LF || lastFrame.search(RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*$')) !== -1) {
+                r.frames.push(Frame.unmarshallTextSingle(lastFrame));
+            } else {
+                r.partial = lastFrame;
+            }
+
+            return r;
+        }
+    }, {
+        key: 'unmarshallBinarySingle',
+        value: function unmarshallBinarySingle(data) {
+            var headerBlock = new Uint8Array([]);
+            var body = new Uint8Array([]);
+
+            // Search for 2 consecutives LF.CODE byte to split the command
+            // and headers from the body
+            for (var i = 0; i < data.length; i++) {
+                if (data[i] === _utils.BYTES.LF_CODE && data[i + 1] === _utils.BYTES.LF_CODE) {
+                    headerBlock = data.slice(0, i + 1);
+                    body = data.slice(i + 2, data.length - 1);
+                    break;
+                }
+            }
+
+            // Parse command + headers and splits them by BYTES.LF_CODE
+            // One headerLines element = command or header key and value
+            var headerLines = [];
+            var divider = 0;
+            for (var _i = 0; _i < headerBlock.length; _i++) {
+                if (headerBlock[_i] === _utils.BYTES.LF_CODE) {
+                    headerLines.push(headerBlock.slice(divider, _i));
+                    divider = _i + 1;
+                }
+            }
+
+            // Pick command from headers
+            var command = String.fromCharCode.apply(String, _toConsumableArray(headerLines.shift()));
+
+            var headers = {};
+
+            // Parse headerLines and create headers object
+            for (var _i2 = 0; _i2 < headerLines.length; _i2++) {
+                var line = String.fromCharCode.apply(String, _toConsumableArray(headerLines[_i2])).split(':');
+                headers[line[0]] = line[1];
+            }
+            return new Frame(command, headers, body);
+        }
+
+        // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket binary frame*.
+        // The data is split when a NULL byte (followed by zero or many LF bytes) is found
+
+    }, {
+        key: 'unmarshallBinary',
+        value: function unmarshallBinary(partialData, data) {
+            var _this2 = this;
+
+            // Split the data before unmarshalling every single STOMP frame.
+            // Web socket servers can send multiple frames in a single websocket message.
+            // If the message size exceeds the websocket message size, then a single
+            // frame can be fragmented across multiple messages.
+            //
+            // `data` data is an ArrayBuffer.
+
+            // Determinate start and end indexes of Stopm frames
+            var calcFrameBundryIndexes = function calcFrameBundryIndexes(datas) {
+                var starts = [0];
+                var ends = [];
+
+                for (var i = 0; i < datas.length; i++) {
+                    if (datas[i] === _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE) {
+                        ends.push(i);
+                    }
+
+                    if (i === datas.length - 1) {
+                        ends.push(i);
+                    }
+                    if (datas[i] !== _utils.BYTES.NULL_CODE && datas[i] !== _utils.BYTES.LF_CODE && (datas[i - 1] === _utils.BYTES.NULL_CODE || datas[i - 1] === _utils.BYTES.LF_CODE) && i < ends[ends.length - 1]) {
+                        starts.push(i);
+                    }
+                }
+                return {
+                    starts: starts,
+                    ends: ends
+                };
+            };
+
+            data = new Uint8Array(data);
+            partialData = new Uint8Array(partialData);
+
+            var datas = partialData.length ? new Uint8Array([].concat(_toConsumableArray(partialData), _toConsumableArray(data))) : data;
+            var lastFrame = new Uint8Array([]);
+            if (datas.length === 1 && datas[0] === _utils.BYTES.LF_CODE) {
+                return { frames: [{ type: 'heartbeat' }], partial: lastFrame };
+            }
+            var frames = [];
+
+            var frameBoundries = calcFrameBundryIndexes(datas);
+
+            for (var i = 0; i < frameBoundries.starts.length; i++) {
+                var singleFrame = datas.slice(frameBoundries.starts[i], frameBoundries.ends[i] - frameBoundries.starts[i]);
+                frames.push(singleFrame);
+            }
+            if (frames[0][0] === _utils.BYTES.LF_CODE) {
+                return {
+                    frames: frames,
+                    partial: lastFrame
+                };
+            }
+
+            var last = frames[frames.length - 1];
+            if (last[0] === _utils.BYTES.LF_CODE || last[0] === _utils.BYTES.NULL_CODE) {
+                frames.pop();
+                return {
+                    frames: frames.map(function (f) {
+                        return _this2.unmarshallBinarySingle(f);
+                    }),
+                    partial: lastFrame
+                };
+            }
+
+            if (last[last.length - 1] === _utils.BYTES.NULL_CODE || last[last.length - 1] === _utils.BYTES.LF_CODE) {
+                return {
+                    frames: frames.map(function (f) {
+                        return _this2.unmarshallBinarySingle(f);
+                    }),
+                    partial: lastFrame
+                };
+            }
+
+            return {
+                frames: frames.map(function (f) {
+                    return _this2.unmarshallBinarySingle(f);
+                }),
+                partial: last
+            };
+        }
+    }, {
+        key: 'unmarshall',
+        value: function unmarshall(partialData, data, isBinary) {
+            if (isBinary || data instanceof ArrayBuffer) {
+                return this.unmarshallBinary(partialData, data);
+            }
+
+            var datas = partialData + data;
+            return this.unmarshallText(datas);
+        }
+
+        // Marshall a Stomp frame
+
+    }, {
+        key: 'marshall',
+        value: function marshall(command, headers, body) {
+            var frame = new Frame(command, headers, body);
+            return frame.toString() + _utils.BYTES.NULL;
+        }
+    }]);
+
+    return Frame;
+}();
+
+exports.default = Frame;
+module.exports = exports['default'];
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _frame = __webpack_require__(2);
+var _frame = __webpack_require__(1);
 
 var _frame2 = _interopRequireDefault(_frame);
 
@@ -270,23 +583,23 @@ var Client = function () {
             this.connectCallback = connectCallback;
             this.debug('Opening Web Socket...');
             this.ws.onmessage = function (evt) {
-                var data = evt.data;
-                if (evt.data instanceof ArrayBuffer) {
-                    data = (0, _utils.typedArrayToUnicodeString)(new Uint8Array(evt.data));
-                }
+
                 _this.serverActivity = Date.now();
-                // heartbeat
-                if (data === _utils.BYTES.LF) {
-                    _this.debug('<<< PONG');
-                    return;
+                if (evt.data instanceof ArrayBuffer) {
+                    _this.debug('<<<', evt.data);
+                } else {
+                    _this.debug('<<< ' + evt.data);
                 }
-                _this.debug('<<< ' + data);
                 // Handle STOMP frames received from the server
                 // The unmarshall function returns the frames parsed and any remaining
                 // data from partial frames.
-                var unmarshalledData = _frame2.default.unmarshall(_this.partialData + data);
+                var unmarshalledData = _frame2.default.unmarshall(_this.partialData, evt.data, _this.isBinary);
                 _this.partialData = unmarshalledData.partial;
                 unmarshalledData.frames.forEach(function (frame) {
+                    if (frame.type === 'heartbeat') {
+                        _this.debug('<<< PONG');
+                        return;
+                    }
                     switch (frame.command) {
                         // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
                         case 'CONNECTED':
@@ -333,7 +646,7 @@ var Client = function () {
                         case 'RECEIPT':
                             if (_this.onreceipt) _this.onreceipt(frame);
                             break;
-                        // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
+                        // // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
                         case 'ERROR':
                             if (errorCallback) errorCallback(frame);
                             break;
@@ -564,6 +877,7 @@ var Client = function () {
     }, {
         key: '_wsSend',
         value: function _wsSend(data) {
+            // console.log('send: ', data)
             if (this.isBinary) data = (0, _utils.unicodeStringToTypedArray)(data);
             this.debug('>>> length ' + data.length);
             // if necessary, split the *STOMP* frame to send it on many smaller
@@ -680,178 +994,6 @@ exports.default = Client;
 module.exports = exports['default'];
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _utils = __webpack_require__(0);
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-// [STOMP Frame](http://stomp.github.com/stomp-specification-1.1.html#STOMP_Frames) Class
-var Frame = function () {
-
-    // Frame constructor
-    function Frame(command) {
-        var headers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-        var body = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-
-        _classCallCheck(this, Frame);
-
-        this.command = command;
-        this.headers = headers;
-        this.body = body;
-    }
-
-    // Provides a textual representation of the frame
-    // suitable to be sent to the server
-
-
-    _createClass(Frame, [{
-        key: 'toString',
-        value: function toString() {
-            var _this = this;
-
-            var lines = [this.command],
-                skipContentLength = this.headers['content-length'] === false;
-            if (skipContentLength) delete this.headers['content-length'];
-
-            Object.keys(this.headers).forEach(function (name) {
-                var value = _this.headers[name];
-                lines.push(name + ':' + value);
-            });
-
-            if (this.body && !skipContentLength) {
-                lines.push('content-length:' + (0, _utils.sizeOfUTF8)(this.body));
-            }
-
-            lines.push(_utils.BYTES.LF + this.body);
-
-            return lines.join(_utils.BYTES.LF);
-        }
-
-        // Unmarshall a single STOMP frame from a `data` string
-
-    }], [{
-        key: 'unmarshallSingle',
-        value: function unmarshallSingle(data) {
-            // search for 2 consecutives LF byte to split the command
-            // and headers from the body
-            var divider = data.search(new RegExp(_utils.BYTES.LF + _utils.BYTES.LF)),
-                headerLines = data.substring(0, divider).split(_utils.BYTES.LF),
-                command = headerLines.shift(),
-                headers = {},
-                body = '',
-
-            // skip the 2 LF bytes that divides the headers from the body
-            bodyIndex = divider + 2;
-
-            // Parse headers in reverse order so that for repeated headers, the 1st
-            // value is used
-            var _iteratorNormalCompletion = true;
-            var _didIteratorError = false;
-            var _iteratorError = undefined;
-
-            try {
-                for (var _iterator = headerLines.reverse()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var line = _step.value;
-
-                    var idx = line.indexOf(':');
-                    headers[(0, _utils.trim)(line.substring(0, idx))] = (0, _utils.trim)(line.substring(idx + 1));
-                }
-                // Parse body
-                // check for content-length or topping at the first NULL byte found.
-            } catch (err) {
-                _didIteratorError = true;
-                _iteratorError = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion && _iterator.return) {
-                        _iterator.return();
-                    }
-                } finally {
-                    if (_didIteratorError) {
-                        throw _iteratorError;
-                    }
-                }
-            }
-
-            if (headers['content-length']) {
-                var len = parseInt(headers['content-length'], 10);
-                body = ('' + data).substring(bodyIndex, bodyIndex + len);
-            } else {
-                var chr = null;
-                for (var i = bodyIndex; i < data.length; i++) {
-                    chr = data.charAt(i);
-                    if (chr === _utils.BYTES.NULL) break;
-                    body += chr;
-                }
-            }
-
-            return new Frame(command, headers, body);
-        }
-
-        // Split the data before unmarshalling every single STOMP frame.
-        // Web socket servers can send multiple frames in a single websocket message.
-        // If the message size exceeds the websocket message size, then a single
-        // frame can be fragmented across multiple messages.
-        //
-        // `datas` is a string.
-        //
-        // returns an *array* of Frame objects
-
-    }, {
-        key: 'unmarshall',
-        value: function unmarshall(datas) {
-            // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
-            // The data is split when a NULL byte (followed by zero or many LF bytes) is found
-            var frames = datas.split(new RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*')),
-                firstFrames = frames.slice(0, -1),
-                lastFrame = frames.slice(-1)[0],
-                r = {
-                frames: firstFrames.map(function (f) {
-                    return Frame.unmarshallSingle(f);
-                }),
-                partial: ''
-            };
-
-            // If this contains a final full message or just a acknowledgement of a PING
-            // without any other content, process this frame, otherwise return the
-            // contents of the buffer to the caller.
-            if (lastFrame === _utils.BYTES.LF || lastFrame.search(RegExp(_utils.BYTES.NULL + _utils.BYTES.LF + '*$')) !== -1) {
-                r.frames.push(Frame.unmarshallSingle(lastFrame));
-            } else {
-                r.partial = lastFrame;
-            }
-
-            return r;
-        }
-
-        // Marshall a Stomp frame
-
-    }, {
-        key: 'marshall',
-        value: function marshall(command, headers, body) {
-            var frame = new Frame(command, headers, body);
-            return frame.toString() + _utils.BYTES.NULL;
-        }
-    }]);
-
-    return Frame;
-}();
-
-exports.default = Frame;
-module.exports = exports['default'];
-
-/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -861,8 +1003,18 @@ module.exports = exports['default'];
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.Frame = undefined;
 
-var _client = __webpack_require__(1);
+var _frame = __webpack_require__(1);
+
+Object.defineProperty(exports, 'Frame', {
+    enumerable: true,
+    get: function get() {
+        return _interopRequireDefault(_frame).default;
+    }
+});
+
+var _client = __webpack_require__(2);
 
 var _client2 = _interopRequireDefault(_client);
 
@@ -894,7 +1046,6 @@ var webstomp = {
 };
 
 exports.default = webstomp;
-module.exports = exports['default'];
 
 /***/ })
 /******/ ]);

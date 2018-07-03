@@ -1,5 +1,5 @@
 import Frame from './frame';
-import {VERSIONS, BYTES, typedArrayToUnicodeString, unicodeStringToTypedArray, createId} from './utils';
+import {VERSIONS, BYTES, unicodeStringToTypedArray, createId} from './utils';
 
 // STOMP Client Class
 //
@@ -64,23 +64,24 @@ class Client {
         this.connectCallback = connectCallback;
         this.debug('Opening Web Socket...');
         this.ws.onmessage = (evt) => {
-            let data = evt.data;
-            if (evt.data instanceof ArrayBuffer) {
-                data = typedArrayToUnicodeString(new Uint8Array(evt.data));
-            }
+
             this.serverActivity = Date.now();
-            // heartbeat
-            if (data === BYTES.LF) {
-                this.debug('<<< PONG');
-                return;
+            if (evt.data instanceof ArrayBuffer) {
+                this.debug('<<<', evt.data);
+            } else {
+                this.debug(`<<< ${evt.data}`);
             }
-            this.debug(`<<< ${data}`);
             // Handle STOMP frames received from the server
             // The unmarshall function returns the frames parsed and any remaining
             // data from partial frames.
-            const unmarshalledData = Frame.unmarshall(this.partialData + data);
+            // debugger
+            const unmarshalledData = Frame.unmarshall(this.partialData, evt.data, this.isBinary);
             this.partialData = unmarshalledData.partial;
             unmarshalledData.frames.forEach(frame => {
+                if (frame.type === 'heartbeat') {
+                    this.debug('<<< PONG');
+                    return;
+                }
                 switch (frame.command) {
                     // [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
                     case 'CONNECTED':
@@ -129,7 +130,7 @@ class Client {
                     case 'RECEIPT':
                         if (this.onreceipt) this.onreceipt(frame);
                         break;
-                    // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
+                    // // [ERROR Frame](http://stomp.github.com/stomp-specification-1.1.html#ERROR)
                     case 'ERROR':
                         if (errorCallback) errorCallback(frame);
                         break;
@@ -313,6 +314,7 @@ class Client {
     }
 
     _wsSend(data) {
+        // console.log('send: ', data)
         if (this.isBinary) data = unicodeStringToTypedArray(data);
         this.debug(`>>> length ${data.length}`);
         // if necessary, split the *STOMP* frame to send it on many smaller
@@ -336,7 +338,6 @@ class Client {
         //
         //     heart-beat: sx, sy
         const [serverOutgoing, serverIncoming] = (headers['heart-beat'] || '0,0').split(',').map(v => parseInt(v, 10));
-
         if (!(this.heartbeat.outgoing === 0 || serverIncoming === 0)) {
             let ttl = Math.max(this.heartbeat.outgoing, serverIncoming);
             this.debug(`send PING every ${ttl}ms`);

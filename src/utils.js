@@ -11,8 +11,10 @@ export const VERSIONS = {
 export const BYTES = {
     // LINEFEED byte (octet 10)
     LF: '\x0A',
+    LF_CODE: 10,
     // NULL byte (octet 0)
-    NULL: '\x00'
+    NULL: '\x00',
+    NULL_CODE: 0
 };
 
 // utility function to trim any whitespace before and after a string
@@ -23,21 +25,22 @@ export function unicodeStringToTypedArray(s) {
     let escstr = encodeURIComponent(s);
     let binstr = escstr.replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1));
     let arr = Array.prototype.map.call(binstr, (c) => c.charCodeAt(0));
+    // debugger
     return new Uint8Array(arr);
 }
 
-// from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
-export function typedArrayToUnicodeString(ua) {
-    let binstr = String.fromCharCode(...ua);
-    let escstr = binstr.replace(/(.)/g, function(m, p) {
-        let code = p.charCodeAt(0).toString(16).toUpperCase();
-        if (code.length < 2) {
-            code = '0' + code;
-        }
-        return '%' + code;
-    });
-    return decodeURIComponent(escstr);
-}
+// // from https://coolaj86.com/articles/unicode-string-to-a-utf-8-typed-array-buffer-in-javascript/
+// export function typedArrayToUnicodeString(ua) {
+//     let binstr = String.fromCharCode(...ua);
+//     let escstr = binstr.replace(/(.)/g, function(m, p) {
+//         let code = p.charCodeAt(0).toString(16).toUpperCase();
+//         if (code.length < 2) {
+//             code = '0' + code;
+//         }
+//         return '%' + code;
+//     });
+//     return decodeURIComponent(escstr);
+// }
 
 // Compute the size of a UTF-8 string by counting its number of bytes
 // (and not the number of characters composing the string)
