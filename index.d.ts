@@ -142,8 +142,8 @@ export interface NackHeaders extends AckHeaders {
 
 declare const webstomp: {
     Frame: Frame,
-    VERSIONS,
-    client,
-    over,
+    VERSIONS: typeof VERSIONS,
+    client: typeof client,
+    over: typeof over,
 }
 export default webstomp
