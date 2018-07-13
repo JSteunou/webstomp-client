@@ -1,6 +1,6 @@
 {
   "name": "webstomp-client",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Stomp client over websocket for browsers and nodejs",
   "license": "Apache-2.0",
   "keywords": [
