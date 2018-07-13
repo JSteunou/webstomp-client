@@ -1,10 +1,10 @@
 import Client from './client';
+import Frame from './frame';
 import {VERSIONS} from './utils';
-
-export {default as Frame} from './frame';
 
 // The `webstomp` Object
 const webstomp = {
+    Frame,
     VERSIONS,
     // This method creates a WebSocket client that is connected to
     // the STOMP server located at the url.
