@@ -139,3 +139,11 @@ export interface AckHeaders extends UnsubscribeHeaders {
 
 export interface NackHeaders extends AckHeaders {
 }
+
+declare const webstomp: {
+    Frame: Frame,
+    VERSIONS,
+    client,
+    over,
+}
+export default webstomp
