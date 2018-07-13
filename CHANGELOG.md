@@ -1,3 +1,8 @@
+# 1.2.4 - 13 Jul. 2018
+
+* Fix some ts types for default export of webstomp
+
+
 # 1.2.3 - 13 Jul. 2018
 
 * Move from webpack to rollup & remove mixed export (named & default) to fix #73
