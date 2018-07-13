@@ -1,3 +1,8 @@
+# 1.2.3 - 13 Jul. 2018
+
+* Move from webpack to rollup & remove mixed export (named & default) to fix #73
+
+
 # 1.2.2 - 03 Jul. 2018
 
 * Fix STOMP CONNECT frame 'accept-version' to match websocket accepted protocol #66
