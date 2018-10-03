@@ -13,12 +13,15 @@ export const PROTOCOLS_VERSIONS = {
     'v12.stomp': VERSIONS.V1_2
 };
 
-export function getSupportedVersions(protocol) {
+export function getSupportedVersion(protocol, debug) {
     const knownVersion = PROTOCOLS_VERSIONS[protocol];
-    if (!knownVersion) {
-        console.warn(`DEPRECATED: ${protocol} is not a recognized STOMP version. In next major client version, this will close the connection.`);
+    if (!knownVersion && debug) {
+        debug(`DEPRECATED: ${protocol} is not a recognized STOMP version. In next major client version, this will close the connection.`);
     }
-    return knownVersion || VERSIONS.supportedVersions();
+    // 2nd temporary fallback if the protocol
+    // does not match a supported STOMP version
+    // This fallback will be removed in next major version
+    return knownVersion || VERSIONS.V1_2;
 }
 
 // Define constants for bytes used throughout the code.

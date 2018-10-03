@@ -95,12 +95,15 @@
       'v12.stomp': VERSIONS.V1_2
   };
 
-  function getSupportedVersions(protocol) {
+  function getSupportedVersion(protocol, debug) {
       var knownVersion = PROTOCOLS_VERSIONS[protocol];
-      if (!knownVersion) {
-          console.warn('DEPRECATED: ' + protocol + ' is not a recognized STOMP version. In next major client version, this will close the connection.');
+      if (!knownVersion && debug) {
+          debug('DEPRECATED: ' + protocol + ' is not a recognized STOMP version. In next major client version, this will close the connection.');
       }
-      return knownVersion || VERSIONS.supportedVersions();
+      // 2nd temporary fallback if the protocol
+      // does not match a supported STOMP version
+      // This fallback will be removed in next major version
+      return knownVersion || VERSIONS.V1_2;
   }
 
   // Define constants for bytes used throughout the code.
@@ -321,7 +324,9 @@
               _options$heartbeat = options.heartbeat,
               heartbeat = _options$heartbeat === undefined ? { outgoing: 10000, incoming: 10000 } : _options$heartbeat,
               _options$debug = options.debug,
-              debug = _options$debug === undefined ? true : _options$debug;
+              debug = _options$debug === undefined ? true : _options$debug,
+              _options$protocols = options.protocols,
+              protocols = _options$protocols === undefined ? [] : _options$protocols;
 
 
           this.ws = ws;
@@ -341,6 +346,7 @@
           // subscription callbacks indexed by subscriber's ID
           this.subscriptions = {};
           this.partialData = '';
+          this.protocols = protocols;
       }
 
       // //// Debugging
@@ -472,7 +478,10 @@
               };
               this.ws.onopen = function () {
                   _this.debug('Web Socket Opened...');
-                  headers['accept-version'] = getSupportedVersions(_this.ws.protocol);
+                  // 1st protocol fallback on user 1st protocols options
+                  // to prevent edge case where server does not comply and respond with a choosen protocol
+                  // or when ws client does not handle protocol property very well
+                  headers['accept-version'] = getSupportedVersion(_this.ws.protocol || _this.protocols[0], _this.debug.bind(_this));
                   // Check if we already have heart-beat in headers before adding them
                   if (!headers['heart-beat']) {
                       headers['heart-beat'] = [_this.heartbeat.outgoing, _this.heartbeat.incoming].join(',');
