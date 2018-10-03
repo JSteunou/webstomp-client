@@ -1,5 +1,5 @@
 import Frame from './frame';
-import {VERSIONS, BYTES, getSupportedVersions, typedArrayToUnicodeString, unicodeStringToTypedArray, createId} from './utils';
+import {VERSIONS, BYTES, getSupportedVersion, typedArrayToUnicodeString, unicodeStringToTypedArray, createId} from './utils';
 
 // STOMP Client Class
 //
@@ -9,7 +9,7 @@ class Client {
 
     constructor(ws, options = {}) {
         // cannot have default options object + destructuring in the same time in method signature
-        let {binary = false, heartbeat = {outgoing: 10000, incoming: 10000}, debug = true} = options;
+        let {binary = false, heartbeat = {outgoing: 10000, incoming: 10000}, debug = true, protocols = []} = options;
 
         this.ws = ws;
         this.ws.binaryType = 'arraybuffer';
@@ -28,6 +28,7 @@ class Client {
         // subscription callbacks indexed by subscriber's ID
         this.subscriptions = {};
         this.partialData = '';
+        this.protocols = protocols;
     }
 
     // //// Debugging
@@ -145,7 +146,10 @@ class Client {
         };
         this.ws.onopen = () => {
             this.debug('Web Socket Opened...');
-            headers['accept-version'] = getSupportedVersions(this.ws.protocol);
+            // 1st protocol fallback on user 1st protocols options
+            // to prevent edge case where server does not comply and respond with a choosen protocol
+            // or when ws client does not handle protocol property very well
+            headers['accept-version'] = getSupportedVersion(this.ws.protocol || this.protocols[0], this.debug.bind(this));
             // Check if we already have heart-beat in headers before adding them
             if (!headers['heart-beat']) {
                 headers['heart-beat'] = [this.heartbeat.outgoing, this.heartbeat.incoming].join(',');
