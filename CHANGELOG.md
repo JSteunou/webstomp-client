@@ -1,8 +1,8 @@
-# 1.2.5 - 0X Oct. 2018
+# 1.2.5 - 10 Oct. 2018
 
-* Use `client.debug` instead of `console.log` for a better control of deprecation warning
-* Fallback on 1st STOMP protocol provide at `Client` creation when ws does not provide a protocol (too many edge cases, let responsability of wrong compatibility on user hands)
-* 2nd fallback after warning on 1.2 STOMP protocol
+* Use `client.debug` instead of `console.log` for a better control of deprecation warning #75
+* Fallback on 1st STOMP protocol provide at `Client` creation when ws does not provide a protocol (too many edge cases, let responsability of wrong compatibility on user hands) #74 #75
+* 2nd fallback after warning on 1.2 STOMP protocol #74 #75
 
 
 # 1.2.4 - 13 Jul. 2018
