@@ -36,6 +36,8 @@ export class Client {
   nack(messageID: string, subscription: Subscription, headers?: NackHeaders): void;
 
   debug(...args: any[]): void;
+
+  onreceipt?(frame: Frame): void;
 }
 
 export class Frame {
