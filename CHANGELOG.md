@@ -1,3 +1,8 @@
+# 1.2.6 - 26 Oct. 2018
+
+* Added missing type for Client onReceipt #78
+
+
 # 1.2.5 - 10 Oct. 2018
 
 * Use `client.debug` instead of `console.log` for a better control of deprecation warning #75
