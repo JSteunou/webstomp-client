@@ -26,11 +26,75 @@ export function getSupportedVersion(protocol, debug) {
 
 // Define constants for bytes used throughout the code.
 export const BYTES = {
+    // NULL byte (octet 0)
+    NULL: '\x00',
     // LINEFEED byte (octet 10)
     LF: '\x0A',
-    // NULL byte (octet 0)
-    NULL: '\x00'
+    // CARRIAGE RETURN byte (octet 13)
+    CR: '\x0D',
+    // COLON byte (octet 58),
+    COLON: '\x3A',
+    // BACKSLASH byte (octet 92)
+    BACKSLASH: '\x5C',
+    // BACKSLASH byte (octet 92) + BACKSLASH byte (octet 92) = \\
+    ESCAPED_BACKSLASH: '\x5C' + '\x5C',
+    // c byte (octet 99)
+    c: '\x63',
+    // r byte (octet 114)
+    r: '\x72',
+    // n byte (octet 110)
+    n: '\x6E'
 };
+
+const HEADER_ESCAPE_RULES = [
+    { pattern: BYTES.LF,    transformed: BYTES.BACKSLASH + BYTES.n, protocols: [VERSIONS.V1_2, VERSIONS.V1_1]},
+    { pattern: BYTES.COLON, transformed: BYTES.BACKSLASH + BYTES.c, protocols: [VERSIONS.V1_2, VERSIONS.V1_1]},
+    { pattern: BYTES.CR,    transformed: BYTES.BACKSLASH + BYTES.r, protocols: [VERSIONS.V1_2]}
+];
+
+const HEADER_UNESCAPE_RULES = [
+    { pattern: BYTES.ESCAPED_BACKSLASH + BYTES.n,                 transformed: BYTES.LF,                protocols: [VERSIONS.V1_2, VERSIONS.V1_1]},
+    { pattern: BYTES.ESCAPED_BACKSLASH + BYTES.c,                 transformed: BYTES.COLON,             protocols: [VERSIONS.V1_2, VERSIONS.V1_1]},
+    { pattern: BYTES.ESCAPED_BACKSLASH + BYTES.ESCAPED_BACKSLASH, transformed: BYTES.ESCAPED_BACKSLASH, protocols: [VERSIONS.V1_2, VERSIONS.V1_1]},
+    { pattern: BYTES.ESCAPED_BACKSLASH + BYTES.r,                 transformed: BYTES.CR,                protocols: [VERSIONS.V1_2]}
+];
+
+function transformHeader(rules, version, header) {
+    rules.forEach(rule => {
+        if (!rule.protocols.includes(version)) return;
+
+        header = header.replace(new RegExp(rule.pattern, 'g'), rule.transformed);
+    });
+
+    return header;
+}
+
+// STOMP 1.1
+// All frames except the CONNECT and CONNECTED frames will also escape
+// any colon or newline octets found in the resulting UTF-8 encoded headers.
+// STOMP 1.2
+// All frames except the CONNECT and CONNECTED frames will also escape any
+// carriage return, line feed or colon found in the resulting UTF-8 encoded headers.
+export function escapeHeader(version, command, header) {
+    if (command === 'CONNECT' || command === 'CONNECTED') {
+        return header;
+    }
+    return transformHeader(HEADER_ESCAPE_RULES, version, header);
+}
+
+// When decoding frame headers, the following transformations MUST be applied:
+// STOMP 1.1
+// \n (octet 92 and 110) translates to newline (octet 10)
+// \c (octet 92 and 99) translates to : (octet 58)
+// \\ (octet 92 and 92) translates to \ (octet 92)
+// STOMP 1.2
+// \r (octet 92 and 114) translates to carriage return (octet 13)
+// \n (octet 92 and 110) translates to line feed (octet 10)
+// \c (octet 92 and 99) translates to : (octet 58)
+// \\ (octet 92 and 92) translates to \ (octet 92)
+export function unescapeHeader(version, header) {
+    return transformHeader(HEADER_UNESCAPE_RULES, version, header);
+}
 
 // utility function to trim any whitespace before and after a string
 export const trim = (str) => str.replace(/^\s+|\s+$/g, '');

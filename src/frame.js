@@ -1,10 +1,11 @@
-import {BYTES, sizeOfUTF8, trim} from './utils';
+import {BYTES, sizeOfUTF8, escapeHeader, unescapeHeader } from './utils';
 
 // [STOMP Frame](http://stomp.github.com/stomp-specification-1.1.html#STOMP_Frames) Class
 class Frame {
 
     // Frame constructor
-    constructor(command, headers = {}, body = '') {
+    constructor(version, command, headers = {}, body = '') {
+        this.version = version;
         this.command = command;
         this.headers = headers;
         this.body = body;
@@ -19,8 +20,9 @@ class Frame {
         if (skipContentLength) delete this.headers['content-length'];
 
         Object.keys(this.headers).forEach(name => {
-            let value = this.headers[name];
-            lines.push(`${name}:${value}`);
+            let headerName = escapeHeader(this.version, this.command, name),
+                headerValue = escapeHeader(this.version, this.command, this.headers[name]);
+            lines.push(`${headerName}:${headerValue}`);
         });
 
         if (this.body && !skipContentLength) {
@@ -33,7 +35,7 @@ class Frame {
     }
 
     // Unmarshall a single STOMP frame from a `data` string
-    static unmarshallSingle(data) {
+    static unmarshallSingle(version, data) {
         // search for 2 consecutives LF byte to split the command
         // and headers from the body
         let divider = data.search(new RegExp(BYTES.LF + BYTES.LF)),
@@ -48,7 +50,9 @@ class Frame {
         // value is used
         for (let line of headerLines.reverse()) {
             let idx = line.indexOf(':');
-            headers[trim(line.substring(0, idx))] = trim(line.substring(idx + 1));
+            let name = unescapeHeader(version, line.substring(0, idx)),
+                value = unescapeHeader(version, line.substring(idx + 1));
+            headers[name] = value;
         }
         // Parse body
         // check for content-length or topping at the first NULL byte found.
@@ -64,7 +68,7 @@ class Frame {
             }
         }
 
-        return new Frame(command, headers, body);
+        return new Frame(version, command, headers, body);
     }
 
     // Split the data before unmarshalling every single STOMP frame.
@@ -72,17 +76,18 @@ class Frame {
     // If the message size exceeds the websocket message size, then a single
     // frame can be fragmented across multiple messages.
     //
+    // `version` is string representing the STOMP version.
     // `datas` is a string.
     //
     // returns an *array* of Frame objects
-    static unmarshall(datas) {
+    static unmarshall(version, datas) {
         // split and unmarshall *multiple STOMP frames* contained in a *single WebSocket frame*.
         // The data is split when a NULL byte (followed by zero or many LF bytes) is found
         let frames = datas.split(new RegExp(BYTES.NULL + BYTES.LF + '*')),
             firstFrames = frames.slice(0, -1),
             lastFrame = frames.slice(-1)[0],
             r = {
-                frames: firstFrames.map(f => Frame.unmarshallSingle(f)),
+                frames: firstFrames.map(f => Frame.unmarshallSingle(version, f)),
                 partial: ''
             };
 
@@ -90,7 +95,7 @@ class Frame {
         // without any other content, process this frame, otherwise return the
         // contents of the buffer to the caller.
         if (lastFrame === BYTES.LF || (lastFrame.search(RegExp(BYTES.NULL + BYTES.LF + '*$'))) !== -1) {
-            r.frames.push(Frame.unmarshallSingle(lastFrame));
+            r.frames.push(Frame.unmarshallSingle(version, lastFrame));
         } else {
             r.partial = lastFrame;
         }
@@ -99,8 +104,8 @@ class Frame {
     }
 
     // Marshall a Stomp frame
-    static marshall(command, headers, body) {
-        let frame = new Frame(command, headers, body);
+    static marshall(version, command, headers, body) {
+        let frame = new Frame(version, command, headers, body);
         return frame.toString() + BYTES.NULL;
     }
 
