@@ -79,7 +79,7 @@ class Client {
             // Handle STOMP frames received from the server
             // The unmarshall function returns the frames parsed and any remaining
             // data from partial frames.
-            const unmarshalledData = Frame.unmarshall(this.partialData + data);
+            const unmarshalledData = Frame.unmarshall(this.version, this.partialData + data);
             this.partialData = unmarshalledData.partial;
             unmarshalledData.frames.forEach(frame => {
                 switch (frame.command) {
@@ -314,7 +314,7 @@ class Client {
 
     // Base method to transmit any stomp frame
     _transmit(command, headers, body) {
-        let out = Frame.marshall(command, headers, body);
+        let out = Frame.marshall(this.version, command, headers, body);
         this.debug(`>>> ${out}`, {frame: {command, headers, body}});
         this._wsSend(out);
     }
